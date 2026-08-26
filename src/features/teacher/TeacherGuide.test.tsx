@@ -24,6 +24,103 @@ function findClosingBrace(css: string, openingBrace: number) {
   return css.length;
 }
 
+interface CssBlock {
+  prelude: string;
+  openingBrace: number;
+  closingBrace: number;
+  body: string;
+}
+
+function normalizePrelude(prelude: string) {
+  return prelude.replace(/\s+/g, ' ').trim();
+}
+
+function findCssBlock(
+  css: string,
+  targetPrelude: string,
+  start = 0,
+  end = css.length,
+): CssBlock | undefined {
+  let cursor = start;
+  while (cursor < end) {
+    const openingBrace = css.indexOf('{', cursor);
+    if (openingBrace === -1 || openingBrace >= end) return undefined;
+    const prelude = css.slice(cursor, openingBrace).trim();
+    const closingBrace = findClosingBrace(css, openingBrace);
+    if (normalizePrelude(prelude) === normalizePrelude(targetPrelude)) {
+      return {
+        prelude,
+        openingBrace,
+        closingBrace,
+        body: css.slice(openingBrace + 1, closingBrace),
+      };
+    }
+    if (prelude.startsWith('@')) {
+      const nestedBlock = findCssBlock(css, targetPrelude, openingBrace + 1, closingBrace);
+      if (nestedBlock) return nestedBlock;
+    }
+    cursor = closingBrace + 1;
+  }
+  return undefined;
+}
+
+function getExactAtRuleBody(css: string, atRulePrelude: string) {
+  const block = findCssBlock(css, atRulePrelude);
+  if (!block || !block.prelude.startsWith('@')) return undefined;
+  return block.body;
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function hasDeclaration(body: string | undefined, property: string, value: string) {
+  if (body === undefined) return false;
+  return new RegExp(
+    `(?:^|;)\\s*${escapeRegExp(property)}\\s*:\\s*${escapeRegExp(value)}\\s*;`,
+  ).test(body);
+}
+
+function moveDeclarationToUnrelatedRule(
+  css: string,
+  sourcePrelude: string,
+  targetPrelude: string,
+  property: string,
+  value: string,
+) {
+  const source = findCssBlock(css, sourcePrelude);
+  const target = findCssBlock(css, targetPrelude);
+  if (!source || !target) return css;
+
+  const declaration = new RegExp(
+    `\\s*${escapeRegExp(property)}\\s*:\\s*${escapeRegExp(value)}\\s*;`,
+  ).exec(source.body);
+  if (!declaration || declaration.index === undefined) return css;
+
+  const replacements = [
+    {
+      start: source.openingBrace + 1,
+      end: source.closingBrace,
+      replacement: `${source.body.slice(0, declaration.index)}${source.body.slice(
+        declaration.index + declaration[0].length,
+      )}`,
+    },
+    {
+      start: target.openingBrace + 1,
+      end: target.closingBrace,
+      replacement: `${target.body}\n    ${property}: ${value};\n`,
+    },
+  ].sort((left, right) => right.start - left.start);
+
+  let mutatedCss = css;
+  for (const replacement of replacements) {
+    mutatedCss = `${mutatedCss.slice(0, replacement.start)}${replacement.replacement}${mutatedCss.slice(
+      replacement.end,
+    )}`;
+  }
+  return mutatedCss;
+}
+
 function parseCssRules(css: string): CssRule[] {
   const rules: CssRule[] = [];
   let cursor = 0;
@@ -51,6 +148,18 @@ function getExactRuleDeclarations(css: string, selector: string) {
   for (let index = rules.length - 1; index >= 0; index -= 1) {
     const rule = rules[index];
     if (rule?.selectors.includes(selector)) return rule.declarations;
+  }
+  return undefined;
+}
+
+function getExactSelectorGroupDeclarations(css: string, selectors: string[]) {
+  const rules = parseCssRules(css);
+  for (let index = rules.length - 1; index >= 0; index -= 1) {
+    const rule = rules[index];
+    if (rule?.selectors.length === selectors.length
+      && selectors.every((selector) => rule.selectors.includes(selector))) {
+      return rule.declarations;
+    }
   }
   return undefined;
 }
@@ -122,7 +231,9 @@ describe('TeacherGuide', () => {
   });
 
   it('keeps the print stylesheet contract explicit and mutation-sensitive', () => {
-    expect(printCss).toMatch(/@page\s*\{[\s\S]*size:\s*A4 portrait;[\s\S]*margin:\s*12mm;[\s\S]*\}/);
+    const pageBody = getExactAtRuleBody(printCss, '@page');
+    expect(hasDeclaration(pageBody, 'size', 'A4 portrait')).toBe(true);
+    expect(hasDeclaration(pageBody, 'margin', '12mm')).toBe(true);
     expect(printCss).toMatch(/@media\s+print\s*\{/);
     const hiddenSelectors = [
       '.app-header',
@@ -154,9 +265,80 @@ describe('TeacherGuide', () => {
       expect(hasNoBreakDeclarations(printCss, selector), selector).toBe(true);
     }
 
-    expect(printCss).toMatch(/html,[\s\S]*body\s*\{[\s\S]*background:\s*#fff\s*!important;[\s\S]*color:\s*#111\s*!important;/);
-    expect(printCss).toMatch(/\[data-print-region\]\s+\*\s*\{[\s\S]*color:\s*#111\s*!important;[\s\S]*background:\s*#fff\s*!important;/);
+    const globalPrintDeclarations = getExactSelectorGroupDeclarations(printCss, ['html', 'body']);
+    for (const selector of ['html', 'body']) {
+      const declarations = globalPrintDeclarations;
+      expect(hasDeclaration(declarations, 'background', '#fff !important'), selector).toBe(true);
+      expect(hasDeclaration(declarations, 'color', '#111 !important'), selector).toBe(true);
+    }
+    const printRegionDescendantDeclarations = getExactRuleDeclarations(printCss, '[data-print-region] *');
+    expect(hasDeclaration(printRegionDescendantDeclarations, 'color', '#111 !important')).toBe(true);
+    expect(hasDeclaration(printRegionDescendantDeclarations, 'background', '#fff !important')).toBe(true);
     expect(printCss).toMatch(/break-inside:\s*avoid;[\s\S]*page-break-inside:\s*avoid;/);
+  });
+
+  it('rejects print declaration ownership mutations', () => {
+    const movedPageSize = moveDeclarationToUnrelatedRule(
+      printCss,
+      '@page',
+      '[data-print-region]',
+      'size',
+      'A4 portrait',
+    );
+    expect(hasDeclaration(getExactAtRuleBody(movedPageSize, '@page'), 'size', 'A4 portrait')).toBe(false);
+    expect(hasDeclaration(getExactRuleDeclarations(movedPageSize, '[data-print-region]'), 'size', 'A4 portrait')).toBe(true);
+
+    const movedPageMargin = moveDeclarationToUnrelatedRule(
+      printCss,
+      '@page',
+      '[data-print-region]',
+      'margin',
+      '12mm',
+    );
+    expect(hasDeclaration(getExactAtRuleBody(movedPageMargin, '@page'), 'margin', '12mm')).toBe(false);
+    expect(hasDeclaration(getExactRuleDeclarations(movedPageMargin, '[data-print-region]'), 'margin', '12mm')).toBe(true);
+
+    const movedGlobalBackground = moveDeclarationToUnrelatedRule(
+      printCss,
+      'html, body',
+      '[data-print-region] *',
+      'background',
+      '#fff !important',
+    );
+    const movedGlobalBackgroundDeclarations = getExactSelectorGroupDeclarations(movedGlobalBackground, ['html', 'body']);
+    expect(hasDeclaration(movedGlobalBackgroundDeclarations, 'background', '#fff !important')).toBe(false);
+    expect(hasDeclaration(getExactRuleDeclarations(movedGlobalBackground, '[data-print-region] *'), 'background', '#fff !important')).toBe(true);
+
+    const movedGlobalColor = moveDeclarationToUnrelatedRule(
+      printCss,
+      'html, body',
+      '[data-print-region] *',
+      'color',
+      '#111 !important',
+    );
+    const movedGlobalColorDeclarations = getExactSelectorGroupDeclarations(movedGlobalColor, ['html', 'body']);
+    expect(hasDeclaration(movedGlobalColorDeclarations, 'color', '#111 !important')).toBe(false);
+    expect(hasDeclaration(getExactRuleDeclarations(movedGlobalColor, '[data-print-region] *'), 'color', '#111 !important')).toBe(true);
+
+    const movedPrintRegionBackground = moveDeclarationToUnrelatedRule(
+      printCss,
+      '[data-print-region] *',
+      'html, body',
+      'background',
+      '#fff !important',
+    );
+    expect(hasDeclaration(getExactRuleDeclarations(movedPrintRegionBackground, '[data-print-region] *'), 'background', '#fff !important')).toBe(false);
+    expect(hasDeclaration(getExactSelectorGroupDeclarations(movedPrintRegionBackground, ['html', 'body']), 'background', '#fff !important')).toBe(true);
+
+    const movedPrintRegionColor = moveDeclarationToUnrelatedRule(
+      printCss,
+      '[data-print-region] *',
+      'html, body',
+      'color',
+      '#111 !important',
+    );
+    expect(hasDeclaration(getExactRuleDeclarations(movedPrintRegionColor, '[data-print-region] *'), 'color', '#111 !important')).toBe(false);
+    expect(hasDeclaration(getExactSelectorGroupDeclarations(movedPrintRegionColor, ['html', 'body']), 'color', '#111 !important')).toBe(true);
   });
 
   it('rejects known false-pass print stylesheet mutations', () => {
