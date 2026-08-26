@@ -75,7 +75,7 @@ export function AppShell({ storage, persistentStorage, localStorage: injectedLoc
   const printViewModel = useMemo(() => createPrintViewModel(selectedPack, currentReport), [currentReport, selectedPack]);
   const gate = selectedPack ? getStageGate(session, selectedPack) : { ready: false, reason: 'case-not-selected' };
   const viewModel: AppViewModel = { session, selectedPack, gate };
-  useStageFocus(viewModel.session.stage);
+  useStageFocus(viewModel.session.stage, `${viewModel.session.stage}:${viewModel.session.comparisonPhase}`);
 
   const send = (action: CaseAction) => dispatch(action);
   const selectCase = (caseId: CaseId) => send({ type: 'SELECT_CASE', caseId });

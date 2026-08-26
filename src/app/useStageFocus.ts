@@ -1,13 +1,13 @@
 import { useEffect, useRef } from 'react';
 import type { StageId } from '../model/session';
 
-export function useStageFocus(stage: StageId) {
-  const previousStage = useRef<StageId | null>(null);
+export function useStageFocus(stage: StageId, focusKey: string = stage) {
+  const previousFocusKey = useRef<string | null>(null);
 
   useEffect(() => {
-    if (previousStage.current === stage) return;
-    previousStage.current = stage;
+    if (previousFocusKey.current === focusKey) return;
+    previousFocusKey.current = focusKey;
     const heading = document.querySelector<HTMLElement>('[data-stage-heading]');
     heading?.focus({ preventScroll: true });
-  }, [stage]);
+  }, [focusKey]);
 }

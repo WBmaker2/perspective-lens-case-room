@@ -8,14 +8,14 @@ import { UpdateHistoryDialog } from './UpdateHistoryDialog';
 afterEach(cleanup);
 
 describe('UpdateHistoryDialog', () => {
-  it('renders ten rows with case titles and no raw case IDs', async () => {
+  it('renders eleven rows with case titles and no raw case IDs', async () => {
     const user = userEvent.setup();
     const onClose = vi.fn();
     const triggerRef = { current: null };
     render(<UpdateHistoryDialog open entries={updateHistory} casePacks={casePacks} triggerRef={triggerRef} onClose={onClose} />);
 
     const dialog = screen.getByRole('dialog', { name: '업데이트 내역' });
-    expect(dialog.querySelectorAll('.update-history-list__item')).toHaveLength(10);
+    expect(dialog.querySelectorAll('.update-history-list__item')).toHaveLength(11);
     expect(within(dialog).getByRole('heading', { name: '운동장 정리 상자' })).toBeInTheDocument();
     expect(within(dialog).queryByText('playground-storage-box')).not.toBeInTheDocument();
     expect(within(dialog).getByText('최초 설계 문서 작성')).toBeInTheDocument();
