@@ -1,4 +1,4 @@
-import type { EvidenceCategory } from './case';
+import type { EvidenceCategory, RewriteRuleSet } from './case';
 
 export interface EvidenceSelection {
   sentenceId: string;
@@ -11,4 +11,11 @@ export interface ComparisonDraft {
   differentExpressionOptionIds: readonly string[];
   missingInformationOptionIds: readonly string[];
   supportingSentenceIds: readonly string[];
+}
+
+export interface RewriteDraft {
+  targetNarratorId: string;
+  audienceId: RewriteRuleSet['audienceId'];
+  purposeId: RewriteRuleSet['purposeId'];
+  blockIds: readonly string[];
 }
