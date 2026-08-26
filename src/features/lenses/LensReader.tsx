@@ -46,13 +46,13 @@ function LensPanel({
 }) {
   const panelTitleId = `${lens.id}-panel-title`;
   return (
-    <article
+    <section
       className={`lens-panel lens-panel--${lens.borderStyle}`}
       data-border-style={lens.borderStyle}
       data-active={isActive}
       data-narrator-id={lens.id}
       role="tabpanel"
-      aria-labelledby={panelTitleId}
+      aria-labelledby={`${lens.id}-tab`}
       id={`${lens.id}-panel`}
     >
       <header className="lens-identity">
@@ -91,7 +91,7 @@ function LensPanel({
           );
         })}
       </ol>
-    </article>
+    </section>
   );
 }
 

@@ -8,7 +8,7 @@ export interface ProgressStepsProps {
 export function ProgressSteps({ activeStage }: ProgressStepsProps) {
   return (
     <nav className="progress" aria-label="학습 단계">
-      <ol className="progress__list" aria-label="학습 단계">
+      <ol className="progress__list progress__list--wrap" aria-label="학습 단계">
         {stageDescriptors.map((stage, index) => (
           <li
             className="progress__item"

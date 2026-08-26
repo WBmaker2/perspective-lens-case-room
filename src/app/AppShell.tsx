@@ -2,15 +2,19 @@ import { casePacks } from '../content/caseIndex';
 import { safetyCopy } from '../content/safetyCopy';
 import { getStageGate } from '../domain/sessionReducer';
 import type { CaseId, InitialHypothesis } from '../model/case';
-import type { CaseAction } from '../model/session';
+import type { CaseAction, StorageAdapter } from '../model/session';
 import type { AppViewModel } from '../model/ui';
 import { ProgressSteps } from '../components/ProgressSteps';
 import { StageRenderer } from './StageRenderer';
 import { useCaseSession } from './useCaseSession';
 import { useStageFocus } from './useStageFocus';
 
-export function AppShell() {
-  const { session, dispatch, persistenceWarning } = useCaseSession();
+export interface AppShellProps {
+  storage?: StorageAdapter;
+}
+
+export function AppShell({ storage }: AppShellProps = {}) {
+  const { session, dispatch, persistenceWarning } = useCaseSession(storage);
   const selectedPack = session.caseId ? casePacks.find((pack) => pack.id === session.caseId) ?? null : null;
   const gate = selectedPack ? getStageGate(session, selectedPack) : { ready: false, reason: 'case-not-selected' };
   const viewModel: AppViewModel = { session, selectedPack, gate };
@@ -20,7 +24,6 @@ export function AppShell() {
   const selectCase = (caseId: CaseId) => send({ type: 'SELECT_CASE', caseId });
   const selectHypothesis = (hypothesis: InitialHypothesis) => send({ type: 'SET_INITIAL_HYPOTHESIS', hypothesis });
   const continueStage = () => {
-    if (viewModel.session.stage === 'intake' && (!viewModel.session.caseId || !viewModel.session.initialHypothesis)) return;
     if (!viewModel.gate.ready) return;
     send({ type: 'ADVANCE_STAGE' });
   };

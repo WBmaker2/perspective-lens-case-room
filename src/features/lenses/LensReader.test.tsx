@@ -31,8 +31,13 @@ describe('LensReader', () => {
     expect(document.querySelectorAll('ol')).toHaveLength(2);
     expect([...document.querySelectorAll('ol')].every((list) => list.querySelectorAll('li').length === 5)).toBe(true);
     expect(screen.getByRole('tablist', { name: '렌즈 선택' })).toBeInTheDocument();
-    expect(screen.getAllByRole('tab')).toHaveLength(2);
-    expect(screen.getAllByRole('tabpanel')).toHaveLength(2);
+    const tabs = screen.getAllByRole('tab');
+    expect(tabs).toHaveLength(2);
+    expect(tabs[0]).toHaveAttribute('aria-selected', 'true');
+    expect(tabs[1]).toHaveAttribute('aria-selected', 'false');
+    const panels = screen.getAllByRole('tabpanel');
+    expect(panels).toHaveLength(2);
+    panels.forEach((panel, index) => expect(panel).toHaveAttribute('aria-labelledby', tabs[index]!.id));
     const summary = screen.getByRole('region', { name: '차이 요약' });
     expect(within(summary).getByText(/위치/)).toBeInTheDocument();
     expect(within(summary).getByText(/관심/)).toBeInTheDocument();
@@ -50,5 +55,14 @@ describe('LensReader', () => {
     expect(screen.getAllByRole('button', { name: '중요 문장 표시' })[0]).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getAllByRole('button', { name: '중요 문장 표시' })[5]).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('button', { name: '렌즈 읽기 완료' })).toBeEnabled();
+
+    await user.click(tabs[0]!);
+    expect(tabs[0]).toHaveFocus();
+    await user.keyboard('{ArrowRight}');
+    expect(tabs[1]).toHaveAttribute('aria-selected', 'true');
+    expect(tabs[1]).toHaveFocus();
+    await user.keyboard('{ArrowLeft}');
+    expect(tabs[0]).toHaveAttribute('aria-selected', 'true');
+    expect(tabs[0]).toHaveFocus();
   });
 });

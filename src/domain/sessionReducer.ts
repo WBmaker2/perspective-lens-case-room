@@ -32,7 +32,10 @@ export function createInitialSession(): CaseSession {
 
 export function getStageGate(session: CaseSession, pack: CasePack): StageGate {
   if (session.caseId !== pack.id) return { ready: false, reason: 'case-not-selected' };
-  if (session.stage === 'intake') return { ready: true, reason: 'ready' };
+  if (session.stage === 'intake') {
+    if (!session.initialHypothesis) return { ready: false, reason: 'initial-hypothesis-required' };
+    return { ready: true, reason: 'ready' };
+  }
   if (session.stage === 'lenses') {
     if (!session.initialHypothesis) return { ready: false, reason: 'initial-hypothesis-required' };
     const narratorIds = pack.narrators.map((narrator) => narrator.id);

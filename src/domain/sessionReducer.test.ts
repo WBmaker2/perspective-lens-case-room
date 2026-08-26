@@ -77,15 +77,19 @@ describe('caseSessionReducer', () => {
     const empty = createInitialSession();
     expect(caseSessionReducer(empty, { type: 'ADVANCE_STAGE' }, resolve)).toBe(empty);
     const selected = caseSessionReducer(empty, { type: 'SELECT_CASE', caseId: pack.id }, resolve);
-    expect(caseSessionReducer(selected, { type: 'ADVANCE_STAGE' }, resolve).stage).toBe('lenses');
+    const hypothesized = caseSessionReducer(selected, { type: 'SET_INITIAL_HYPOTHESIS', hypothesis: 'seen-information' }, resolve);
+    expect(caseSessionReducer(hypothesized, { type: 'ADVANCE_STAGE' }, resolve).stage).toBe('lenses');
   });
   it('keeps intake gated until a case is selected and requires a hypothesis for lenses', () => {
     const initial = createInitialSession();
     expect(initial.stage).toBe('intake');
     expect(getStageGate(initial, pack).ready).toBe(false);
     const selected = caseSessionReducer(initial, { type: 'SELECT_CASE', caseId: pack.id }, resolve);
-    expect(getStageGate(selected, pack).ready).toBe(true);
-    const next = caseSessionReducer(selected, { type: 'ADVANCE_STAGE' }, resolve);
+    expect(getStageGate(selected, pack)).toEqual({ ready: false, reason: 'initial-hypothesis-required' });
+    expect(caseSessionReducer(selected, { type: 'ADVANCE_STAGE' }, resolve).stage).toBe('intake');
+    const hypothesized = caseSessionReducer(selected, { type: 'SET_INITIAL_HYPOTHESIS', hypothesis: 'seen-information' }, resolve);
+    expect(getStageGate(hypothesized, pack).ready).toBe(true);
+    const next = caseSessionReducer(hypothesized, { type: 'ADVANCE_STAGE' }, resolve);
     expect(next.stage).toBe('lenses');
     expect(caseSessionReducer(next, { type: 'ADVANCE_STAGE' }, resolve).stage).toBe('lenses');
   });

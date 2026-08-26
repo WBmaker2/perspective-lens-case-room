@@ -5,6 +5,7 @@
   --color-navy: #233044;
   --color-teal-dark: #0f766e;
   --color-orange-dark: #c2410c;
+  --reading-size: 18px;
   --radius-sm: 0.35rem;
   --radius-md: 0.75rem;
   --radius-lg: 1rem;
@@ -54,7 +55,7 @@ button:focus-visible, input:focus-visible, [tabindex="-1"]:focus-visible {
 .app-shell__orientation p:first-child { color: var(--color-navy); font-size: 1rem; font-weight: 700; }
 
 .progress { margin: 0 0 2.75rem; }
-.progress__list { display: flex; margin: 0; padding: 0; list-style: none; gap: clamp(0.3rem, 1.6vw, 1rem); overflow-x: auto; }
+.progress__list { display: flex; flex-wrap: wrap; margin: 0; padding: 0; list-style: none; gap: clamp(0.3rem, 1.6vw, 1rem); overflow: visible; }
 .progress__item { display: flex; min-width: max-content; align-items: center; gap: 0.45rem; border-bottom: 2px solid var(--color-line); padding: 0.55rem 0.1rem 0.7rem; color: var(--color-muted); font-size: 0.8rem; }
 .progress__item[aria-current="step"] { border-bottom-color: var(--color-teal-dark); color: var(--color-navy); font-weight: 800; }
 .progress__number { color: var(--color-orange-dark); font-variant-numeric: tabular-nums; font-size: 0.68rem; font-weight: 800; }
@@ -127,12 +128,12 @@ button:focus-visible, input:focus-visible, [tabindex="-1"]:focus-visible {
 .lens-panel--double .lens-identity__icon { color: var(--color-orange-dark); }
 .lens-identity h2 { margin: 0; color: var(--color-navy); font-size: 1.25rem; }
 .lens-identity__position { display: block; margin-top: 0.2rem; color: var(--color-muted); font-size: 0.76rem; }
-.read-toggle, .important-toggle { border: 1px solid var(--color-line); border-radius: 999px; background: transparent; color: var(--color-navy); padding: 0.45rem 0.65rem; font-size: 0.76rem; font-weight: 700; cursor: pointer; }
+.read-toggle, .important-toggle { min-width: 44px; min-height: 44px; border: 1px solid var(--color-line); border-radius: 999px; background: transparent; color: var(--color-navy); padding: 0.45rem 0.65rem; font-size: 0.76rem; font-weight: 700; cursor: pointer; }
 .read-toggle.is-read, .important-toggle[aria-pressed="true"] { border-color: var(--color-teal-dark); background: #e5f3f0; color: var(--color-teal-dark); }
 .narrative-list { display: grid; gap: 0.5rem; margin: 1rem 0 0; padding: 0; list-style: none; }
 .narrative-sentence { display: grid; grid-template-columns: 1.4rem minmax(0, 1fr) auto; align-items: center; gap: 0.55rem; border-bottom: 1px solid var(--color-soft); padding: 0.55rem 0; }
 .narrative-sentence__number { align-self: start; color: var(--color-orange-dark); font-size: 0.74rem; font-weight: 800; }
-.narrative-sentence p { margin: 0; color: var(--color-navy); font-size: 0.9rem; line-height: 1.6; }
+.narrative-sentence p { margin: 0; color: var(--color-navy); font-size: var(--reading-size, 18px); line-height: 1.6; }
 .narrative-sentence.is-marked p { font-weight: 700; }
 .important-toggle { white-space: nowrap; font-size: 0.7rem; }
 .difference-summary { margin-top: 1.5rem; border-top: 2px solid var(--color-navy); padding-top: 1rem; }
