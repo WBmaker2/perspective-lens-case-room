@@ -1,0 +1,44 @@
+{
+  "name": "perspective-lens-case-room",
+  "version": "0.1.0",
+  "description": "관점 렌즈 사건실",
+  "scripts": {
+    "dev": "vite",
+    "typecheck": "tsc -b",
+    "prebuild": "npm run typecheck",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint .",
+    "lint:filesize": "node scripts/check-file-length.mjs",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "pretest:e2e": "npm run build",
+    "test:e2e": "playwright test"
+  },
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.62.1",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.6",
+    "@types/node": "^26.3.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.5",
+    "@vitejs/plugin-react": "^6.1.0",
+    "eslint": "^10.9.1",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.4",
+    "jsdom": "^29.1.1",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.68.0",
+    "vite": "^8.2.2",
+    "vitest": "^4.1.11"
+  }
+}
