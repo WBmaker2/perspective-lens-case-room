@@ -69,6 +69,42 @@ describe('CaseReport', () => {
     expect(screen.queryByText('mut-f-3')).not.toBeInTheDocument();
   });
 
+  it('namespaces print headings and keeps every ARIA reference unique', () => {
+    render(
+      <>
+        <CaseReport model={model} pack={missingUmbrellaTag} onRevisitStage={vi.fn()} onReset={vi.fn()} />
+        <CaseReport model={model} pack={missingUmbrellaTag} printMode onRevisitStage={vi.fn()} onReset={vi.fn()} />
+      </>,
+    );
+
+    const normalReport = document.querySelector<HTMLElement>('.case-report:not(.case-report--print)');
+    const printReport = document.querySelector<HTMLElement>('.case-report--print');
+    expect(normalReport).toHaveAttribute('aria-labelledby', 'report-title');
+    expect(normalReport?.querySelector('#report-title')).toHaveAttribute('data-stage-heading');
+    expect(printReport).toHaveAttribute('aria-labelledby', 'teacher-print-report-title');
+    expect(printReport?.querySelector('#teacher-print-report-title')).not.toHaveAttribute('data-stage-heading');
+
+    const ids = [...document.querySelectorAll<HTMLElement>('[id]')].map((element) => element.id).filter(Boolean);
+    expect(new Set(ids).size).toBe(ids.length);
+    for (const element of document.querySelectorAll<HTMLElement>('[aria-labelledby]')) {
+      for (const id of element.getAttribute('aria-labelledby')!.split(/\s+/)) {
+        expect(document.querySelectorAll(`#${CSS.escape(id)}`)).toHaveLength(1);
+      }
+    }
+  });
+
+  it('uses static sentence guidance in the print copy', () => {
+    render(<CaseReport model={model} pack={missingUmbrellaTag} printMode onRevisitStage={vi.fn()} onReset={vi.fn()} />);
+
+    const printReport = document.querySelector<HTMLElement>('.case-report--print');
+    expect(printReport).toHaveTextContent('인물별 문장 번호와 근거 연결 상태를 참고하세요.');
+    expect(printReport).not.toHaveTextContent(/버튼을 누르세요|클릭|다시 보기/);
+    expect(printReport).toHaveTextContent('가람 근거 문장 1');
+    expect(printReport).toHaveTextContent('근거 연결됨');
+    expect(printReport?.querySelectorAll('.case-report__sentence-reference')).not.toHaveLength(0);
+    expect(printReport?.querySelectorAll('.case-report__sentence-button')).toHaveLength(0);
+  });
+
   it('opens a cancellable reset dialog and only resets after explicit confirmation', async () => {
     const user = userEvent.setup();
     const onRevisitStage = vi.fn();

@@ -119,8 +119,8 @@ function SentenceRevisit({
 }) {
   const info = sentenceInfo(pack, sentenceId);
   const label = info
-    ? `${context ? `${context} · ` : ''}${info.narrator.displayName} ${prefix} 문장 ${sentenceNumber} 다시 보기`
-    : `${context ? `${context} · ` : ''}${prefix} 문장 ${sentenceNumber} 다시 보기`;
+    ? `${context ? `${context} · ` : ''}${info.narrator.displayName} ${prefix} 문장 ${sentenceNumber}${readOnly ? '' : ' 다시 보기'}`
+    : `${context ? `${context} · ` : ''}${prefix} 문장 ${sentenceNumber}${readOnly ? '' : ' 다시 보기'}`;
   if (readOnly) {
     return <span className="case-report__sentence-reference" data-sentence-id={sentenceId}>{label}</span>;
   }
@@ -137,6 +137,7 @@ function SentenceRevisit({
 }
 
 export function CaseReport({ model, pack, onRevisitStage, onReset, printMode = false }: CaseReportProps) {
+  const headingPrefix = printMode ? 'teacher-print-report' : 'report';
   const reportBody = (
     resetTriggerRef: RefObject<HTMLButtonElement | null> | null,
     openResetDialog: (() => void) | null,
@@ -144,13 +145,13 @@ export function CaseReport({ model, pack, onRevisitStage, onReset, printMode = f
     <>
             <div className="stage-heading-block">
               <p className="eyebrow">EVIDENCE-CENTERED REPORT / 06</p>
-              <h1 id="report-title" data-stage-heading tabIndex={-1}>사건 보고서</h1>
+              <h1 id={`${headingPrefix}-title`} {...(!printMode ? { 'data-stage-heading': true, tabIndex: -1 } : {})}>사건 보고서</h1>
               <p className="lead">무엇을 보았고, 어떤 생각을 고쳐 보았는지 근거와 함께 돌아봅니다.</p>
             </div>
 
-            <section className="case-report__section" aria-labelledby="report-evidence-title">
-              <h2 id="report-evidence-title">사용한 근거</h2>
-              <p className="case-report__intro">두 렌즈의 문장을 순서대로 확인했어요. 문장을 다시 읽으려면 해당 버튼을 누르세요.</p>
+            <section className="case-report__section" aria-labelledby={`${headingPrefix}-evidence-title`}>
+              <h2 id={`${headingPrefix}-evidence-title`}>사용한 근거</h2>
+              <p className="case-report__intro">{printMode ? '인물별 문장 번호와 근거 연결 상태를 참고하세요.' : '두 렌즈의 문장을 순서대로 확인했어요. 문장을 다시 읽으려면 해당 버튼을 누르세요.'}</p>
               <ol className="case-report__evidence-list">
                 {model.evidence.map((evidence) => (
                   <li key={evidence.sentenceId} className="case-report__evidence-row">
@@ -169,8 +170,8 @@ export function CaseReport({ model, pack, onRevisitStage, onReset, printMode = f
               </ol>
             </section>
 
-            <section className="case-report__section" aria-labelledby="report-thought-title">
-              <h2 id="report-thought-title">처음 생각과 수정한 생각</h2>
+            <section className="case-report__section" aria-labelledby={`${headingPrefix}-thought-title`}>
+              <h2 id={`${headingPrefix}-thought-title`}>처음 생각과 수정한 생각</h2>
               <div className="case-report__hypothesis">
                 <span>처음 고른 초점</span>
                 <p>{hypothesisLabels[model.initialHypothesis]}</p>
@@ -204,8 +205,8 @@ export function CaseReport({ model, pack, onRevisitStage, onReset, printMode = f
               </div>
             </section>
 
-            <section className="case-report__section" aria-labelledby="report-preserved-title">
-              <h2 id="report-preserved-title">관점 전환에서 유지한 사실</h2>
+            <section className="case-report__section" aria-labelledby={`${headingPrefix}-preserved-title`}>
+              <h2 id={`${headingPrefix}-preserved-title`}>관점 전환에서 유지한 사실</h2>
               <div className="case-report__fact-row">
                 <span>보존한 사실 표지</span>
                 {model.preservedFactIds.length > 0 ? (
@@ -228,8 +229,8 @@ export function CaseReport({ model, pack, onRevisitStage, onReset, printMode = f
               </div>
             </section>
 
-            <section className="case-report__section" aria-labelledby="report-questions-title">
-              <h2 id="report-questions-title">남은 질문</h2>
+            <section className="case-report__section" aria-labelledby={`${headingPrefix}-questions-title`}>
+              <h2 id={`${headingPrefix}-questions-title`}>남은 질문</h2>
               {model.remainingQuestions.length > 0 ? (
                 <ul className="case-report__questions">
                   {model.remainingQuestions.map((question) => <li key={question}>{question}</li>)}
@@ -253,7 +254,7 @@ export function CaseReport({ model, pack, onRevisitStage, onReset, printMode = f
   );
 
   return (
-    <section className={`stage-content case-report${printMode ? ' case-report--print' : ''}`} aria-labelledby="report-title">
+    <section className={`stage-content case-report${printMode ? ' case-report--print' : ''}`} aria-labelledby={`${headingPrefix}-title`}>
       {printMode ? (
         <div className="case-report__background">{reportBody(null, null)}</div>
       ) : (
