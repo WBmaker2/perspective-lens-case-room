@@ -2,7 +2,7 @@ import { casePacks } from '../content/caseIndex';
 import { safetyCopy } from '../content/safetyCopy';
 import { getStageGate } from '../domain/sessionReducer';
 import type { CaseId, InitialHypothesis } from '../model/case';
-import type { CaseAction, StorageAdapter } from '../model/session';
+import type { CaseAction, ComparisonDraft, EvidenceSelection, StorageAdapter } from '../model/session';
 import type { AppViewModel } from '../model/ui';
 import { ProgressSteps } from '../components/ProgressSteps';
 import { StageRenderer } from './StageRenderer';
@@ -27,6 +27,11 @@ export function AppShell({ storage }: AppShellProps = {}) {
     if (!viewModel.gate.ready) return;
     send({ type: 'ADVANCE_STAGE' });
   };
+  const saveInitialComparison = (draft: ComparisonDraft) => send({ type: 'SAVE_INITIAL_COMPARISON', draft });
+  const revealRecords = (recordIds: readonly string[]) => send({ type: 'REVEAL_RECORDS', recordIds });
+  const saveRevisedComparison = (draft: ComparisonDraft, reasonSentenceIds: readonly string[]) => send({
+    type: 'SAVE_REVISED_COMPARISON', draft, revisionEvidenceSentenceIds: reasonSentenceIds,
+  });
 
   return (
     <main className="app-shell">
@@ -54,7 +59,10 @@ export function AppShell({ storage }: AppShellProps = {}) {
         onSelectHypothesis={selectHypothesis}
         onMarkRead={(narratorId) => send({ type: 'MARK_LENS_READ', narratorId })}
         onToggleImportantSentence={(sentenceId) => send({ type: 'TOGGLE_IMPORTANT_SENTENCE', sentenceId })}
-        onRecordEvidence={(selection) => send({ type: 'RECORD_EVIDENCE', selection })}
+        onRecordEvidence={(selection: EvidenceSelection) => send({ type: 'RECORD_EVIDENCE', selection })}
+        onSaveInitialComparison={saveInitialComparison}
+        onRevealRecords={revealRecords}
+        onSaveRevisedComparison={saveRevisedComparison}
         onContinue={continueStage}
       />
     </main>

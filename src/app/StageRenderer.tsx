@@ -1,8 +1,9 @@
 import type { CaseId, CasePack, InitialHypothesis } from '../model/case';
-import type { CaseSession, EvidenceSelection, StageId } from '../model/session';
+import type { CaseSession, ComparisonDraft, EvidenceSelection, StageId } from '../model/session';
 import { CaseIntake } from '../features/intake/CaseIntake';
 import { LensReader } from '../features/lenses/LensReader';
 import { EvidenceBoard } from '../features/evidence/EvidenceBoard';
+import { CrossExamination } from '../features/comparison/CrossExamination';
 import { stageLabel } from '../model/ui';
 
 export interface StageRendererProps {
@@ -13,6 +14,9 @@ export interface StageRendererProps {
   onMarkRead: (narratorId: string) => void;
   onToggleImportantSentence: (sentenceId: string) => void;
   onRecordEvidence: (selection: EvidenceSelection) => void;
+  onSaveInitialComparison: (draft: ComparisonDraft) => void;
+  onRevealRecords: (recordIds: readonly string[]) => void;
+  onSaveRevisedComparison: (draft: ComparisonDraft, reasonSentenceIds: readonly string[]) => void;
   onContinue: () => void;
 }
 
@@ -26,7 +30,7 @@ function Placeholder({ stage }: { stage: StageId }) {
   );
 }
 
-export function StageRenderer({ casePacks, session, onSelectCase, onSelectHypothesis, onMarkRead, onToggleImportantSentence, onRecordEvidence, onContinue }: StageRendererProps) {
+export function StageRenderer({ casePacks, session, onSelectCase, onSelectHypothesis, onMarkRead, onToggleImportantSentence, onRecordEvidence, onSaveInitialComparison, onRevealRecords, onSaveRevisedComparison, onContinue }: StageRendererProps) {
   const selectedPack = session.caseId ? casePacks.find((pack) => pack.id === session.caseId) ?? null : null;
 
   switch (session.stage) {
@@ -61,7 +65,20 @@ export function StageRenderer({ casePacks, session, onSelectCase, onSelectHypoth
         />
       ) : <Placeholder stage="evidence" />;
     case 'comparison':
-      return <Placeholder stage="comparison" />;
+      return selectedPack ? (
+        <CrossExamination
+          pack={selectedPack}
+          phase={session.comparisonPhase}
+          initialDraft={session.initialComparison}
+          revisedDraft={session.revisedComparison}
+          revealedRecordIds={session.revealedRecordIds}
+          revisionEvidenceSentenceIds={session.revisionEvidenceSentenceIds}
+          onSaveInitial={onSaveInitialComparison}
+          onReveal={onRevealRecords}
+          onSaveRevision={onSaveRevisedComparison}
+          onContinue={onContinue}
+        />
+      ) : <Placeholder stage="comparison" />;
     case 'rewrite':
       return <Placeholder stage="rewrite" />;
     case 'report':

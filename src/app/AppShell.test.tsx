@@ -1,6 +1,7 @@
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { missingUmbrellaTag } from '../content/cases/missingUmbrellaTag';
 import { playgroundStorageBox } from '../content/cases/playgroundStorageBox';
 import { createInitialSession } from '../domain/sessionReducer';
 import { SESSION_KEY } from '../domain/sessionPersistence';
@@ -75,5 +76,43 @@ describe('AppShell', () => {
         selectedSegmentIds: sentence.segments.map((segment) => segment.id),
       });
     });
+  });
+
+  it('connects comparison save and reveal controls to the reducer actions', async () => {
+    const user = userEvent.setup();
+    const comparisonSession = {
+      ...createInitialSession(),
+      caseId: missingUmbrellaTag.id,
+      stage: 'comparison' as const,
+      comparisonPhase: 'initial' as const,
+    };
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(comparisonSession));
+    render(<AppShell />);
+
+    const selectOption = (group: string, optionId: string) => {
+      const fieldset = screen.getByRole('group', { name: group });
+      const checkbox = fieldset.querySelector<HTMLInputElement>(`[data-option-id="${optionId}"]`);
+      if (!checkbox) throw new Error(`비교 옵션을 찾지 못했습니다: ${optionId}`);
+      return user.click(checkbox);
+    };
+    await selectOption('공통 사실', 'mut-comparison-umbrella');
+    await selectOption('다른 표현', 'mut-comparison-inference');
+    await selectOption('빠진 정보', 'mut-comparison-owner-blind-spot');
+    for (const checkbox of screen.getAllByRole('checkbox', { name: /근거 문장/ })) await user.click(checkbox);
+    await user.click(screen.getByRole('button', { name: '비교 완료' }));
+
+    await waitFor(() => {
+      const saved = JSON.parse(sessionStorage.getItem(SESSION_KEY) ?? '{}') as typeof comparisonSession & { initialComparison: unknown };
+      expect(saved.comparisonPhase).toBe('reveal');
+      expect(saved.initialComparison).not.toBeNull();
+    });
+    expect(screen.queryByText('파란 표찰은 우산 걸이 아래로 떨어져 있었다.')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '추가 기록 열기' }));
+    await waitFor(() => {
+      const saved = JSON.parse(sessionStorage.getItem(SESSION_KEY) ?? '{}') as typeof comparisonSession & { revealedRecordIds: string[] };
+      expect(saved.comparisonPhase).toBe('revised');
+      expect(saved.revealedRecordIds).toHaveLength(3);
+    });
+    expect(screen.getByText('파란 표찰은 우산 걸이 아래로 떨어져 있었다.')).toBeInTheDocument();
   });
 });
