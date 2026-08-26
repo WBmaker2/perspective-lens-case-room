@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import type { CasePack, NarratorLens } from '../../model/case';
+import { SentenceCard } from '../../components/SentenceCard';
+import { StageActionButton } from '../../components/StageActionButton';
 
 export interface LensReaderProps {
   pack: CasePack;
@@ -76,17 +78,12 @@ function LensPanel({
           const marked = markedSentenceIds.includes(sentence.id);
           return (
             <li className={`narrative-sentence${marked ? ' is-marked' : ''}`} key={sentence.id}>
-              <span className="narrative-sentence__number" aria-hidden="true">{sentence.number}</span>
-              <p id={`${sentence.id}-text`}>{sentence.text}</p>
-              <button
-                className="important-toggle"
-                type="button"
-                aria-pressed={marked}
-                aria-describedby={`${sentence.id}-text`}
-                onClick={() => onToggleImportantSentence(sentence.id)}
-              >
-                중요 문장 표시
-              </button>
+              <SentenceCard
+                sentence={sentence}
+                mode="mark-important"
+                pressed={marked}
+                onToggle={onToggleImportantSentence}
+              />
             </li>
           );
         })}
@@ -172,9 +169,14 @@ export function LensReader({ pack, readNarratorIds, markedSentenceIds, onMarkRea
 
       <div className="stage-action-row">
         <p className="gate-hint" role="status">두 렌즈에 읽음 표시를 하고, 각 렌즈에서 중요 문장을 하나 이상 골라 주세요.</p>
-        <button className="primary-action" type="button" disabled={!complete} onClick={onContinue}>
-          렌즈 읽기 완료
-        </button>
+        <StageActionButton
+          disabled={!complete}
+          isCurrentRequired={complete}
+          guidanceText="두 렌즈를 살펴봤어요. 근거 보드로 이동하세요."
+          onClick={onContinue}
+        >
+          근거 보드로 이동
+        </StageActionButton>
       </div>
     </section>
   );

@@ -17,11 +17,11 @@ describe('AppShell', () => {
     expect(intakeHeading).toHaveFocus();
     expect(screen.getByText('모든 사건과 인물은 가상입니다.', { exact: true })).toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: /사건 선택/ })).toHaveLength(4);
-    expect(screen.getByRole('button', { name: '렌즈 읽기 시작' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '사건 렌즈 열기' })).toBeDisabled();
 
     await user.click(screen.getByRole('button', { name: /운동장 정리 상자 사건 선택/ }));
     await user.click(screen.getByRole('radio', { name: /보이는 정보/ }));
-    await user.click(screen.getByRole('button', { name: '렌즈 읽기 시작' }));
+    await user.click(screen.getByRole('button', { name: '사건 렌즈 열기' }));
 
     const lensesHeading = screen.getByRole('heading', { name: '렌즈 A/B' });
     expect(lensesHeading).toHaveAttribute('data-stage-heading');
@@ -42,6 +42,6 @@ describe('AppShell', () => {
 
     expect(screen.getByText('진행 상황을 이 기기에 저장하지 못했습니다. 활동은 계속할 수 있습니다.', { exact: true })).toBeInTheDocument();
     await user.click(screen.getByRole('radio', { name: /보이는 정보/ }));
-    expect(screen.getByRole('button', { name: '렌즈 읽기 시작' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: '사건 렌즈 열기' })).toBeEnabled();
   });
 });

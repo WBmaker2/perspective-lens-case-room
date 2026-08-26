@@ -44,7 +44,8 @@ describe('LensReader', () => {
     expect(within(summary).getByText(/목적/)).toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: '중요 문장 표시' })).toHaveLength(10);
     expect(screen.getAllByRole('button', { name: '읽음 표시' })).toHaveLength(2);
-    expect(screen.getByRole('button', { name: '렌즈 읽기 완료' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '근거 보드로 이동' })).toBeDisabled();
+    expect(document.querySelectorAll('.gi-pulse')).toHaveLength(0);
 
     await user.click(screen.getAllByRole('button', { name: '읽음 표시' })[0]!);
     await user.click(screen.getAllByRole('button', { name: '읽음 표시' })[1]!);
@@ -54,7 +55,9 @@ describe('LensReader', () => {
 
     expect(screen.getAllByRole('button', { name: '중요 문장 표시' })[0]).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getAllByRole('button', { name: '중요 문장 표시' })[5]).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByRole('button', { name: '렌즈 읽기 완료' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: '근거 보드로 이동' })).toBeEnabled();
+    expect(document.querySelectorAll('.gi-pulse')).toHaveLength(1);
+    expect(screen.getByRole('button', { name: '근거 보드로 이동' })).toHaveClass('gi-pulse');
 
     await user.click(tabs[0]!);
     expect(tabs[0]).toHaveFocus();

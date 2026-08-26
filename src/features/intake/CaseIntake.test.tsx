@@ -45,10 +45,13 @@ describe('CaseIntake', () => {
     expect(screen.getByText(casePacks[0]!.focusQuestion)).toBeInTheDocument();
     expect(screen.getAllByRole('radio')).toHaveLength(3);
     expect(container.querySelectorAll('input[type="text"], input[type="file"], textarea')).toHaveLength(0);
-    expect(screen.getByRole('button', { name: '렌즈 읽기 시작' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '사건 렌즈 열기' })).toBeDisabled();
+    expect(container.querySelectorAll('.gi-pulse')).toHaveLength(0);
 
     await user.click(screen.getByRole('radio', { name: /보이는 정보/ }));
     rerender(view());
-    expect(screen.getByRole('button', { name: '렌즈 읽기 시작' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: '사건 렌즈 열기' })).toBeEnabled();
+    expect(container.querySelectorAll('.gi-pulse')).toHaveLength(1);
+    expect(screen.getByRole('button', { name: '사건 렌즈 열기' })).toHaveClass('gi-pulse');
   });
 });

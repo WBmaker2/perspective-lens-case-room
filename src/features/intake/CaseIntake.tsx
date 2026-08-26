@@ -2,6 +2,7 @@ import type { CaseId, CasePack, InitialHypothesis } from '../../model/case';
 import type { CaseSession } from '../../model/session';
 import { safetyCopy } from '../../content/safetyCopy';
 import { CaseIllustration } from '../../components/CaseIllustration';
+import { StageActionButton } from '../../components/StageActionButton';
 
 export interface CaseIntakeProps {
   casePacks: readonly CasePack[];
@@ -118,14 +119,14 @@ export function CaseIntake({ casePacks, session, onSelectCase, onSelectHypothesi
         </div>
       )}
       <div className="stage-action-row">
-        <button
-          className="primary-action"
-          type="button"
+        <StageActionButton
           disabled={!selectedPack || !session.initialHypothesis}
+          isCurrentRequired={Boolean(selectedPack && session.initialHypothesis)}
+          guidanceText="사건과 첫 생각을 골랐어요. 사건 렌즈를 열어 보세요."
           onClick={onContinue}
         >
-          렌즈 읽기 시작
-        </button>
+          사건 렌즈 열기
+        </StageActionButton>
       </div>
     </section>
   );

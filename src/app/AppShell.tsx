@@ -54,6 +54,7 @@ export function AppShell({ storage }: AppShellProps = {}) {
         onSelectHypothesis={selectHypothesis}
         onMarkRead={(narratorId) => send({ type: 'MARK_LENS_READ', narratorId })}
         onToggleImportantSentence={(sentenceId) => send({ type: 'TOGGLE_IMPORTANT_SENTENCE', sentenceId })}
+        onRecordEvidence={(selection) => send({ type: 'RECORD_EVIDENCE', selection })}
         onContinue={continueStage}
       />
     </main>

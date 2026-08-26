@@ -1,0 +1,6 @@
+@keyframes gi-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(15, 118, 110, 0.1); transform: translateZ(0); }
+  50% { box-shadow: 0 0 0 5px rgba(15, 118, 110, 0.25); transform: translateZ(0); }
+}
+
+.gi-pulse { animation: gi-pulse 1.8s ease-in-out infinite; }

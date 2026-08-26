@@ -1,7 +1,8 @@
 import type { CaseId, CasePack, InitialHypothesis } from '../model/case';
-import type { CaseSession, StageId } from '../model/session';
+import type { CaseSession, EvidenceSelection, StageId } from '../model/session';
 import { CaseIntake } from '../features/intake/CaseIntake';
 import { LensReader } from '../features/lenses/LensReader';
+import { EvidenceBoard } from '../features/evidence/EvidenceBoard';
 import { stageLabel } from '../model/ui';
 
 export interface StageRendererProps {
@@ -11,6 +12,7 @@ export interface StageRendererProps {
   onSelectHypothesis: (hypothesis: InitialHypothesis) => void;
   onMarkRead: (narratorId: string) => void;
   onToggleImportantSentence: (sentenceId: string) => void;
+  onRecordEvidence: (selection: EvidenceSelection) => void;
   onContinue: () => void;
 }
 
@@ -24,7 +26,7 @@ function Placeholder({ stage }: { stage: StageId }) {
   );
 }
 
-export function StageRenderer({ casePacks, session, onSelectCase, onSelectHypothesis, onMarkRead, onToggleImportantSentence, onContinue }: StageRendererProps) {
+export function StageRenderer({ casePacks, session, onSelectCase, onSelectHypothesis, onMarkRead, onToggleImportantSentence, onRecordEvidence, onContinue }: StageRendererProps) {
   const selectedPack = session.caseId ? casePacks.find((pack) => pack.id === session.caseId) ?? null : null;
 
   switch (session.stage) {
@@ -50,7 +52,14 @@ export function StageRenderer({ casePacks, session, onSelectCase, onSelectHypoth
         />
       ) : <Placeholder stage="lenses" />;
     case 'evidence':
-      return <Placeholder stage="evidence" />;
+      return selectedPack ? (
+        <EvidenceBoard
+          pack={selectedPack}
+          selections={session.evidenceSelections}
+          onRecord={onRecordEvidence}
+          onContinue={onContinue}
+        />
+      ) : <Placeholder stage="evidence" />;
     case 'comparison':
       return <Placeholder stage="comparison" />;
     case 'rewrite':
