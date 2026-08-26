@@ -15,10 +15,10 @@ export interface CrossExaminationProps {
   onReveal: (recordIds: readonly string[]) => void;
   onSaveRevision: (draft: ComparisonDraft, reasonSentenceIds: readonly string[]) => void;
   onContinue: () => void;
-  /** IDs are controlled by the reducer. Kept optional for direct feature use. */
-  revealedRecordIds?: readonly string[];
+  /** IDs are controlled by the reducer and must be supplied by the app boundary. */
+  revealedRecordIds: readonly string[];
   /** Revision reasons are separate from the comparison's supporting sentences. */
-  revisionEvidenceSentenceIds?: readonly string[];
+  revisionEvidenceSentenceIds: readonly string[];
 }
 
 type DraftOptionKey = 'sharedFactOptionIds' | 'differentExpressionOptionIds' | 'missingInformationOptionIds';
@@ -175,8 +175,10 @@ export function CrossExamination({
   revealedRecordIds,
   revisionEvidenceSentenceIds,
 }: CrossExaminationProps) {
-  const [draft, setDraft] = useState<ComparisonDraft>(() => cloneDraft(initialDraft ?? emptyDraft()));
-  const [reasonSentenceIds, setReasonSentenceIds] = useState<readonly string[]>(() => [...(revisionEvidenceSentenceIds ?? [])]);
+  const [draft, setDraft] = useState<ComparisonDraft>(() => cloneDraft(
+    phase === 'revised' ? revisedDraft ?? initialDraft ?? emptyDraft() : initialDraft ?? emptyDraft(),
+  ));
+  const [reasonSentenceIds, setReasonSentenceIds] = useState<readonly string[]>(() => [...revisionEvidenceSentenceIds]);
   const previousPhase = useRef(phase);
   const previousRevisedDraft = useRef(revisedDraft);
   const previousReasons = useRef(revisionEvidenceSentenceIds);
@@ -188,7 +190,7 @@ export function CrossExamination({
     if (enteredRevised) setDraft(cloneDraft(revisedDraft ?? initialDraft ?? emptyDraft()));
     if (phase === 'initial' && previousPhase.current !== 'initial') setDraft(cloneDraft(initialDraft ?? emptyDraft()));
     if (phase === 'revised' && revisedDraft && revisedDraft !== previousRevisedDraft.current) setDraft(cloneDraft(revisedDraft));
-    if (phase === 'revised' && revisionEvidenceSentenceIds && revisionEvidenceSentenceIds !== previousReasons.current) {
+    if (phase === 'revised' && revisionEvidenceSentenceIds !== previousReasons.current) {
       setReasonSentenceIds([...revisionEvidenceSentenceIds]);
     }
     previousPhase.current = phase;
@@ -203,24 +205,18 @@ export function CrossExamination({
   const revisionFeedbackIsSupported = feedback?.status === 'supported' && supportingIdsAreValid;
   const canSaveInitial = phase === 'initial' && feedback?.status === 'supported' && supportingIdsAreValid;
   const canSaveRevision = phase === 'revised' && revisionFeedbackIsSupported && validReasonIds.length > 0;
-  const propsReasons = revisionEvidenceSentenceIds ?? undefined;
   const propsRevisionSaved = Boolean(
     phase === 'revised' && revisedDraft && evaluateComparison(pack, revisedDraft).status === 'supported' &&
-    propsReasons && propsReasons.length > 0 && propsReasons.every((id) => sentenceIdSet.has(id)) &&
+    revisionEvidenceSentenceIds.length > 0 && revisionEvidenceSentenceIds.every((id) => sentenceIdSet.has(id)) &&
     sameIds(draft.sharedFactOptionIds, revisedDraft.sharedFactOptionIds) &&
     sameIds(draft.differentExpressionOptionIds, revisedDraft.differentExpressionOptionIds) &&
     sameIds(draft.missingInformationOptionIds, revisedDraft.missingInformationOptionIds) &&
     sameIds(draft.supportingSentenceIds, revisedDraft.supportingSentenceIds) &&
-    sameIds(reasonSentenceIds, propsReasons),
+    sameIds(reasonSentenceIds, revisionEvidenceSentenceIds),
   );
-  const directUseRevisionSaved = Boolean(
-    phase === 'revised' && revisedDraft && revisionEvidenceSentenceIds === undefined &&
-    evaluateComparison(pack, revisedDraft).status === 'supported' && sameIds(draft.supportingSentenceIds, revisedDraft.supportingSentenceIds),
-  );
-  const revisionSaved = propsRevisionSaved || directUseRevisionSaved;
+  const revisionSaved = propsRevisionSaved;
   const hiddenRecords = pack.neutralRecords.filter((record) => record.visibility === 'reveal');
-  const controlledRevealIds = revealedRecordIds ?? (phase === 'revised' ? hiddenRecords.map((record) => record.id) : []);
-  const visibleRecords = hiddenRecords.filter((record) => controlledRevealIds.includes(record.id));
+  const visibleRecords = hiddenRecords.filter((record) => revealedRecordIds.includes(record.id));
 
   const toggleOption = (key: DraftOptionKey, optionId: string) => {
     setDraft((current) => {

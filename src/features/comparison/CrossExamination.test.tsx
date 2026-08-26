@@ -46,6 +46,8 @@ describe('CrossExamination', () => {
         onReveal={() => undefined}
         onSaveRevision={() => undefined}
         onContinue={() => undefined}
+        revealedRecordIds={[]}
+        revisionEvidenceSentenceIds={[]}
       />,
     );
 
@@ -59,9 +61,104 @@ describe('CrossExamination', () => {
 
     await user.click(complete);
     expect(saved).toHaveLength(1);
-    expect(saved[0]).toEqual({ ...supportedDraft(), supportingSentenceIds: missingUmbrellaTag.narrators.flatMap((narrator) => narrator.sentences.map((sentence) => sentence.id)) });
-    expect(saved[0]).not.toBe(supportedDraft());
+    expect(saved[0]).toMatchObject({
+      sharedFactOptionIds: ['mut-comparison-umbrella'],
+      differentExpressionOptionIds: ['mut-comparison-inference'],
+      missingInformationOptionIds: ['mut-comparison-owner-blind-spot'],
+      supportingSentenceIds: missingUmbrellaTag.narrators.flatMap((narrator) => narrator.sentences.map((sentence) => sentence.id)),
+    });
     expect(evaluateComparison(missingUmbrellaTag, saved[0]!).status).toBe('supported');
+  });
+
+  it('passes a fresh snapshot with fresh nested arrays and leaves the source draft unchanged', async () => {
+    const user = userEvent.setup();
+    const source = supportedDraft();
+    const saved: ComparisonDraft[] = [];
+    render(
+      <CrossExamination
+        pack={missingUmbrellaTag}
+        phase="initial"
+        initialDraft={source}
+        revisedDraft={null}
+        onSaveInitial={(draft) => saved.push(draft)}
+        onReveal={() => undefined}
+        onSaveRevision={() => undefined}
+        onContinue={() => undefined}
+        revealedRecordIds={[]}
+        revisionEvidenceSentenceIds={[]}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: '비교 완료' }));
+
+    const callbackDraft = saved[0]!;
+    expect(callbackDraft).not.toBe(source);
+    expect(callbackDraft.sharedFactOptionIds).not.toBe(source.sharedFactOptionIds);
+    expect(callbackDraft.differentExpressionOptionIds).not.toBe(source.differentExpressionOptionIds);
+    expect(callbackDraft.missingInformationOptionIds).not.toBe(source.missingInformationOptionIds);
+    expect(callbackDraft.supportingSentenceIds).not.toBe(source.supportingSentenceIds);
+
+    const mutableCallbackDraft = callbackDraft as unknown as { sharedFactOptionIds: string[]; supportingSentenceIds: string[] };
+    mutableCallbackDraft.sharedFactOptionIds.push('mut-comparison-moved');
+    mutableCallbackDraft.supportingSentenceIds.push('mut-a-5');
+    expect(source.sharedFactOptionIds).toEqual(['mut-comparison-umbrella']);
+    expect(source.supportingSentenceIds).not.toContain('mut-a-5');
+  });
+
+  it('hydrates a persisted revised comparison on first mount and keeps the initial thought read-only', () => {
+    const initial = supportedDraft();
+    const revised: ComparisonDraft = {
+      ...initial,
+      sharedFactOptionIds: ['mut-comparison-moved'],
+      supportingSentenceIds: ['mut-a-2', 'mut-b-4', 'mut-a-4', 'mut-b-3'],
+    };
+    render(
+      <CrossExamination
+        pack={missingUmbrellaTag}
+        phase="revised"
+        initialDraft={initial}
+        revisedDraft={revised}
+        onSaveInitial={() => undefined}
+        onReveal={() => undefined}
+        onSaveRevision={() => undefined}
+        onContinue={() => undefined}
+        revealedRecordIds={['mut-r-2', 'mut-r-3', 'mut-r-4']}
+        revisionEvidenceSentenceIds={['mut-a-4']}
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: '관점 전환 시작' })).toHaveClass('gi-pulse');
+    expect(screen.queryByRole('button', { name: '수정 비교 완료' })).not.toBeInTheDocument();
+    expect(screen.getByRole('group', { name: '공통 사실' }).querySelector<HTMLInputElement>('[data-option-id="mut-comparison-moved"]')).toBeChecked();
+    expect(screen.getByRole('group', { name: '공통 사실' }).querySelector<HTMLInputElement>('[data-option-id="mut-comparison-umbrella"]')).not.toBeChecked();
+    expect(screen.getByRole('heading', { name: '처음 생각' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '처음 생각' }).parentElement?.parentElement).toHaveTextContent('가람과 다온 모두 노란 우산을 보았다.');
+  });
+
+  it('does not reveal records or mark revision saved without reducer-backed IDs', () => {
+    const revised: ComparisonDraft = {
+      ...supportedDraft(),
+      sharedFactOptionIds: ['mut-comparison-moved'],
+      supportingSentenceIds: ['mut-a-2', 'mut-b-4', 'mut-a-4', 'mut-b-3'],
+    };
+    render(
+      <CrossExamination
+        pack={missingUmbrellaTag}
+        phase="revised"
+        initialDraft={supportedDraft()}
+        revisedDraft={revised}
+        onSaveInitial={() => undefined}
+        onReveal={() => undefined}
+        onSaveRevision={() => undefined}
+        onContinue={() => undefined}
+        revealedRecordIds={[]}
+        revisionEvidenceSentenceIds={[]}
+      />,
+    );
+
+    expect(screen.queryByText('파란 표찰은 우산 걸이 아래로 떨어져 있었다.')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '관점 전환 시작' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '수정 비교 완료' })).toBeDisabled();
   });
 
   it('reveals ordered records, edits a cloned revision, and keeps the first thought unchanged', async () => {

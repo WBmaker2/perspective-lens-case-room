@@ -114,5 +114,29 @@ describe('AppShell', () => {
       expect(saved.revealedRecordIds).toHaveLength(3);
     });
     expect(screen.getByText('파란 표찰은 우산 걸이 아래로 떨어져 있었다.')).toBeInTheDocument();
+
+    const comparisonGroup = screen.getByRole('group', { name: '공통 사실' });
+    await user.click(comparisonGroup.querySelector<HTMLInputElement>('[data-option-id="mut-comparison-umbrella"]')!);
+    await user.click(comparisonGroup.querySelector<HTMLInputElement>('[data-option-id="mut-comparison-moved"]')!);
+    await user.click(screen.getByRole('checkbox', { name: /이유 문장.*mut-a-4/ }));
+    const saveRevision = screen.getByRole('button', { name: '수정 비교 완료' });
+    expect(saveRevision).toBeEnabled();
+    await user.click(saveRevision);
+
+    await waitFor(() => {
+      const saved = JSON.parse(sessionStorage.getItem(SESSION_KEY) ?? '{}') as typeof comparisonSession & {
+        revisedComparison: { sharedFactOptionIds: string[] };
+        revisionEvidenceSentenceIds: string[];
+      };
+      expect(saved.revisedComparison.sharedFactOptionIds).toEqual(['mut-comparison-moved']);
+      expect(saved.revisionEvidenceSentenceIds).toEqual(['mut-a-4']);
+    });
+    expect(screen.getByRole('button', { name: '관점 전환 시작' })).toBeEnabled();
+    await user.click(screen.getByRole('button', { name: '관점 전환 시작' }));
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: '관점 전환' })).toBeInTheDocument();
+      const saved = JSON.parse(sessionStorage.getItem(SESSION_KEY) ?? '{}') as typeof comparisonSession;
+      expect(saved.stage).toBe('rewrite');
+    });
   });
 });
