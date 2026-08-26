@@ -1,13 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { makeCasePackFixture } from '../test/fixtures/casePackFixture';
+import { missingUmbrellaTag } from '../content/cases/missingUmbrellaTag';
 import type { CaseSession, ComparisonDraft } from '../model/session';
 import { caseSessionReducer, createInitialSession, getStageGate } from './sessionReducer';
 
 const pack = makeCasePackFixture();
 const resolve = () => pack;
-const supportedDraft: ComparisonDraft = {
-  sharedFactOptionIds: ['comparison-shared'], differentExpressionOptionIds: [], missingInformationOptionIds: [],
-  supportingSentenceIds: ['box-sentence-1', 'playground-sentence-2'],
+const supportedDraftFor = (casePack = missingUmbrellaTag): ComparisonDraft => {
+  const categories = ['shared-fact', 'different-expression', 'missing-information'] as const;
+  const selected = categories.map((category) => casePack.comparisonOptions.find((option) => option.validFor.includes(category))!);
+  return { sharedFactOptionIds: [selected[0]!.id], differentExpressionOptionIds: [selected[1]!.id], missingInformationOptionIds: [selected[2]!.id], supportingSentenceIds: [...new Set(selected.flatMap((option) => option.evidenceSentenceIds))] };
 };
 
 describe('caseSessionReducer', () => {
@@ -23,19 +25,24 @@ describe('caseSessionReducer', () => {
   });
 
   it('clones and preserves initial and revised comparison snapshots', () => {
-    const session: CaseSession = { ...createInitialSession(), caseId: pack.id, stage: 'comparison' };
-    const afterInitial = caseSessionReducer(session, { type: 'SAVE_INITIAL_COMPARISON', draft: supportedDraft }, resolve);
-    const revised = { ...supportedDraft, supportingSentenceIds: [...supportedDraft.supportingSentenceIds] };
-    const afterRevision = caseSessionReducer(afterInitial, { type: 'SAVE_REVISED_COMPARISON', draft: revised, revisionEvidenceSentenceIds: ['box-sentence-1'] }, resolve);
-    expect(afterRevision.initialComparison).toEqual(supportedDraft);
+    const session: CaseSession = { ...createInitialSession(), caseId: missingUmbrellaTag.id, stage: 'comparison' };
+    const draft = supportedDraftFor();
+    const afterInitial = caseSessionReducer(session, { type: 'SAVE_INITIAL_COMPARISON', draft }, () => missingUmbrellaTag);
+    const revised = { ...draft, supportingSentenceIds: [...draft.supportingSentenceIds] };
+    const revealId = missingUmbrellaTag.neutralRecords.find((record) => record.visibility === 'reveal')!.id;
+    const afterReveal = caseSessionReducer(afterInitial, { type: 'REVEAL_RECORDS', recordIds: [revealId] }, () => missingUmbrellaTag);
+    const afterRevision = caseSessionReducer(afterReveal, { type: 'SAVE_REVISED_COMPARISON', draft: revised, revisionEvidenceSentenceIds: ['mut-a-4'] }, () => missingUmbrellaTag);
+    expect(afterRevision.initialComparison).toEqual(draft);
     expect(afterRevision.revisedComparison).toEqual(revised);
     expect(afterRevision.initialComparison).not.toBe(afterRevision.revisedComparison);
   });
 
   it('adds revealed records without changing the initial comparison', () => {
-    const session: CaseSession = { ...createInitialSession(), caseId: pack.id, initialComparison: supportedDraft };
-    const next = caseSessionReducer(session, { type: 'REVEAL_RECORDS', recordIds: ['record-reveal-one'] }, resolve);
-    expect(next.revealedRecordIds).toEqual(['record-reveal-one']);
-    expect(next.initialComparison).toEqual(supportedDraft);
+    const draft = supportedDraftFor();
+    const session: CaseSession = { ...createInitialSession(), caseId: missingUmbrellaTag.id, comparisonPhase: 'reveal', initialComparison: draft };
+    const revealId = missingUmbrellaTag.neutralRecords.find((record) => record.visibility === 'reveal')!.id;
+    const next = caseSessionReducer(session, { type: 'REVEAL_RECORDS', recordIds: [revealId] }, () => missingUmbrellaTag);
+    expect(next.revealedRecordIds).toEqual([revealId]);
+    expect(next.initialComparison).toEqual(draft);
   });
 });

@@ -65,7 +65,13 @@ export function getStageGate(session: CaseSession, pack: CasePack): StageGate {
       ? { ready: true, reason: 'ready' }
       : { ready: false, reason: 'supported-rewrite-required' };
   }
-  return { ready: true, reason: 'ready' };
+  if (session.stage === 'report') {
+    if (!session.rewriteDraft) return { ready: false, reason: 'supported-rewrite-required' };
+    return evaluateRewrite(pack, session.rewriteDraft).status === 'supported'
+      ? { ready: true, reason: 'ready' }
+      : { ready: false, reason: 'supported-rewrite-required' };
+  }
+  return { ready: false, reason: 'unknown-stage' };
 }
 
 export function caseSessionReducer(session: CaseSession, action: CaseAction, resolveCasePack: CasePackResolver): CaseSession {
@@ -81,9 +87,30 @@ export function caseSessionReducer(session: CaseSession, action: CaseAction, res
       return { ...session, markedSentenceIds: marked };
     }
     case 'RECORD_EVIDENCE': return { ...session, evidenceSelections: { ...session.evidenceSelections, [action.selection.sentenceId]: cloneEvidence(action.selection) } };
-    case 'SAVE_INITIAL_COMPARISON': return { ...session, initialComparison: cloneComparison(action.draft), comparisonPhase: 'reveal' };
-    case 'REVEAL_RECORDS': return { ...session, revealedRecordIds: unique([...session.revealedRecordIds, ...action.recordIds]), comparisonPhase: 'revised' };
-    case 'SAVE_REVISED_COMPARISON': return { ...session, revisedComparison: cloneComparison(action.draft), revisionEvidenceSentenceIds: unique(action.revisionEvidenceSentenceIds), comparisonPhase: 'revised' };
+    case 'SAVE_INITIAL_COMPARISON': {
+      if (!session.caseId) return session;
+      const pack = resolveCasePack(session.caseId);
+      if (evaluateComparison(pack, action.draft).status !== 'supported') return session;
+      return { ...session, initialComparison: cloneComparison(action.draft), comparisonPhase: 'reveal' };
+    }
+    case 'REVEAL_RECORDS': {
+      if (!session.caseId || !session.initialComparison || session.comparisonPhase !== 'reveal') return session;
+      const pack = resolveCasePack(session.caseId);
+      if (evaluateComparison(pack, session.initialComparison).status !== 'supported') return session;
+      const revealIds = new Set(pack.neutralRecords.filter((record) => record.visibility === 'reveal').map((record) => record.id));
+      const ids = unique(action.recordIds);
+      if (ids.length === 0 || ids.some((id) => !revealIds.has(id))) return session;
+      return { ...session, revealedRecordIds: unique([...session.revealedRecordIds, ...ids]), comparisonPhase: 'revised' };
+    }
+    case 'SAVE_REVISED_COMPARISON': {
+      if (!session.caseId || !session.initialComparison || session.comparisonPhase !== 'revised' || session.revealedRecordIds.length === 0) return session;
+      const pack = resolveCasePack(session.caseId);
+      if (evaluateComparison(pack, session.initialComparison).status !== 'supported' || evaluateComparison(pack, action.draft).status !== 'supported') return session;
+      const sentenceIds = new Set(pack.narrators.flatMap((narrator) => narrator.sentences.map((sentence) => sentence.id)));
+      const evidenceIds = unique(action.revisionEvidenceSentenceIds);
+      if (evidenceIds.length === 0 || evidenceIds.some((id) => !sentenceIds.has(id))) return session;
+      return { ...session, revisedComparison: cloneComparison(action.draft), revisionEvidenceSentenceIds: evidenceIds, comparisonPhase: 'revised' };
+    }
     case 'SET_REWRITE_DRAFT': return { ...session, rewriteDraft: cloneRewrite(action.draft) };
     case 'ADVANCE_STAGE': {
       if (!session.caseId) return session;
