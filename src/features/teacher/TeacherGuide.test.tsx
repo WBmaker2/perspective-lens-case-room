@@ -9,6 +9,64 @@ import { TeacherGuide } from './TeacherGuide';
 
 const printCss = readFileSync(resolve(process.cwd(), 'src/styles/print.css'), 'utf8');
 
+interface CssRule {
+  selectors: string[];
+  declarations: string;
+}
+
+function findClosingBrace(css: string, openingBrace: number) {
+  let depth = 1;
+  for (let index = openingBrace + 1; index < css.length; index += 1) {
+    if (css[index] === '{') depth += 1;
+    if (css[index] === '}') depth -= 1;
+    if (depth === 0) return index;
+  }
+  return css.length;
+}
+
+function parseCssRules(css: string): CssRule[] {
+  const rules: CssRule[] = [];
+  let cursor = 0;
+  while (cursor < css.length) {
+    const openingBrace = css.indexOf('{', cursor);
+    if (openingBrace === -1) break;
+    const prelude = css.slice(cursor, openingBrace).trim();
+    const closingBrace = findClosingBrace(css, openingBrace);
+    const body = css.slice(openingBrace + 1, closingBrace);
+    if (prelude.startsWith('@')) {
+      rules.push(...parseCssRules(body));
+    } else {
+      rules.push({
+        selectors: prelude.split(',').map((selector) => selector.trim()),
+        declarations: body,
+      });
+    }
+    cursor = closingBrace + 1;
+  }
+  return rules;
+}
+
+function getExactRuleDeclarations(css: string, selector: string) {
+  const rules = parseCssRules(css);
+  for (let index = rules.length - 1; index >= 0; index -= 1) {
+    const rule = rules[index];
+    if (rule?.selectors.includes(selector)) return rule.declarations;
+  }
+  return undefined;
+}
+
+function hasDisplayDeclaration(css: string, selector: string, value: string) {
+  const declarations = getExactRuleDeclarations(css, selector);
+  return declarations !== undefined
+    && new RegExp(`display\\s*:\\s*${value}\\s*!important\\s*;`).test(declarations);
+}
+
+function hasNoBreakDeclarations(css: string, selector: string) {
+  const declarations = getExactRuleDeclarations(css, selector);
+  return declarations?.includes('break-inside: avoid;') === true
+    && declarations.includes('page-break-inside: avoid;');
+}
+
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
@@ -66,14 +124,64 @@ describe('TeacherGuide', () => {
   it('keeps the print stylesheet contract explicit and mutation-sensitive', () => {
     expect(printCss).toMatch(/@page\s*\{[\s\S]*size:\s*A4 portrait;[\s\S]*margin:\s*12mm;[\s\S]*\}/);
     expect(printCss).toMatch(/@media\s+print\s*\{/);
-    expect(printCss).toMatch(/\[data-print-region\]\s*\{[\s\S]*display:\s*block\s*!important;[\s\S]*\}/);
-    expect(printCss).toMatch(/\.app-header[\s\S]*\.app-shell__orientation[\s\S]*\.progress[\s\S]*\.utility-group/);
-    expect(printCss).toMatch(/\[role="tablist"\]/);
-    expect(printCss).toMatch(/\[role="tab"\]/);
-    expect(printCss).toMatch(/\.modal-dialog-backdrop/);
-    expect(printCss).toMatch(/button,\s*\.action-guidance,\s*\.gi-pulse/);
+    const hiddenSelectors = [
+      '.app-header',
+      '.app-shell__orientation',
+      '.progress',
+      '.utility-group',
+      '.teacher-guide__actions',
+      '.modal-dialog-backdrop',
+      '.case-report__dialog-backdrop',
+      '[role="tablist"]',
+      '[role="tab"]',
+      'button',
+      '.action-guidance',
+      '.gi-pulse',
+    ];
+    for (const selector of hiddenSelectors) {
+      expect(hasDisplayDeclaration(printCss, selector, 'none'), selector).toBe(true);
+    }
+    expect(hasDisplayDeclaration(printCss, '[data-print-region]', 'block')).toBe(true);
+
+    const noBreakSelectors = [
+      '[data-print-region] .teacher-guide__section--rubric li',
+      '[data-print-region] .teacher-guide__narrator',
+      '[data-print-region] .case-report__section',
+      '[data-print-region] .case-report__snapshot',
+      '[data-print-region] .case-report__evidence-row',
+    ];
+    for (const selector of noBreakSelectors) {
+      expect(hasNoBreakDeclarations(printCss, selector), selector).toBe(true);
+    }
+
     expect(printCss).toMatch(/html,[\s\S]*body\s*\{[\s\S]*background:\s*#fff\s*!important;[\s\S]*color:\s*#111\s*!important;/);
     expect(printCss).toMatch(/\[data-print-region\]\s+\*\s*\{[\s\S]*color:\s*#111\s*!important;[\s\S]*background:\s*#fff\s*!important;/);
     expect(printCss).toMatch(/break-inside:\s*avoid;[\s\S]*page-break-inside:\s*avoid;/);
+  });
+
+  it('rejects known false-pass print stylesheet mutations', () => {
+    expect(hasDisplayDeclaration(printCss, '.modal-dialog-backdrop', 'none')).toBe(true);
+    const removedGlobalBackdrop = printCss.replace('  .modal-dialog-backdrop,\n', '');
+    expect(removedGlobalBackdrop).not.toBe(printCss);
+    expect(hasDisplayDeclaration(removedGlobalBackdrop, '.modal-dialog-backdrop', 'none')).toBe(false);
+
+    const replacedGlobalDisplay = printCss.replace(
+      '    display: none !important;\n  }\n\n  .app-shell > *',
+      '    visibility: hidden;\n  }\n\n  .app-shell > *',
+    );
+    expect(replacedGlobalDisplay).not.toBe(printCss);
+    expect(hasDisplayDeclaration(replacedGlobalDisplay, '.modal-dialog-backdrop', 'none')).toBe(false);
+
+    const rubricRuleStart = printCss.indexOf('  [data-print-region] .teacher-guide__section--rubric li,');
+    const rubricRuleEnd = printCss.indexOf('\n  }', rubricRuleStart) + '\n  }'.length;
+    expect(rubricRuleStart).toBeGreaterThanOrEqual(0);
+    expect(rubricRuleEnd).toBeGreaterThan(rubricRuleStart);
+    const rubricRule = printCss.slice(rubricRuleStart, rubricRuleEnd);
+    const removedNoBreakDeclarations = `${printCss.slice(0, rubricRuleStart)}${rubricRule.replace(
+      '    break-inside: avoid;\n    page-break-inside: avoid;\n',
+      '',
+    )}${printCss.slice(rubricRuleEnd)}`;
+    expect(removedNoBreakDeclarations).not.toBe(printCss);
+    expect(hasNoBreakDeclarations(removedNoBreakDeclarations, '[data-print-region] .case-report__section')).toBe(false);
   });
 });
