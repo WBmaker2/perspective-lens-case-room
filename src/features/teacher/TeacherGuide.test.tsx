@@ -81,6 +81,44 @@ function hasDeclaration(body: string | undefined, property: string, value: strin
   ).test(body);
 }
 
+function countDeclaration(body: string | undefined, property: string, value: string) {
+  if (body === undefined) return 0;
+  const declarationPattern = new RegExp(
+    `^\\s*${escapeRegExp(property)}\\s*:\\s*${escapeRegExp(value)}\\s*$`,
+  );
+  return body.split(';').filter((declaration) => declarationPattern.test(declaration)).length;
+}
+
+function expectDeclarationMigrationContract({
+  originalCss,
+  mutatedCss,
+  sourceBefore,
+  sourceAfter,
+  targetBefore,
+  targetAfter,
+  property,
+  value,
+}: {
+  originalCss: string;
+  mutatedCss: string;
+  sourceBefore: string | undefined;
+  sourceAfter: string | undefined;
+  targetBefore: string | undefined;
+  targetAfter: string | undefined;
+  property: string;
+  value: string;
+}) {
+  expect(mutatedCss).not.toBe(originalCss);
+  expect(countDeclaration(sourceAfter, property, value)).toBe(
+    countDeclaration(sourceBefore, property, value) - 1,
+  );
+  expect(countDeclaration(targetAfter, property, value)).toBe(
+    countDeclaration(targetBefore, property, value) + 1,
+  );
+  expect(hasDeclaration(sourceAfter, property, value)).toBe(false);
+  expect(hasDeclaration(targetAfter, property, value)).toBe(true);
+}
+
 function moveDeclarationToUnrelatedRule(
   css: string,
   sourcePrelude: string,
@@ -277,7 +315,7 @@ describe('TeacherGuide', () => {
     expect(printCss).toMatch(/break-inside:\s*avoid;[\s\S]*page-break-inside:\s*avoid;/);
   });
 
-  it('rejects print declaration ownership mutations', () => {
+  it('rejects print declaration ownership mutations and proves source-minus-one/target-plus-one count deltas', () => {
     const movedPageSize = moveDeclarationToUnrelatedRule(
       printCss,
       '@page',
@@ -285,8 +323,16 @@ describe('TeacherGuide', () => {
       'size',
       'A4 portrait',
     );
-    expect(hasDeclaration(getExactAtRuleBody(movedPageSize, '@page'), 'size', 'A4 portrait')).toBe(false);
-    expect(hasDeclaration(getExactRuleDeclarations(movedPageSize, '[data-print-region]'), 'size', 'A4 portrait')).toBe(true);
+    expectDeclarationMigrationContract({
+      originalCss: printCss,
+      mutatedCss: movedPageSize,
+      sourceBefore: getExactAtRuleBody(printCss, '@page'),
+      sourceAfter: getExactAtRuleBody(movedPageSize, '@page'),
+      targetBefore: getExactRuleDeclarations(printCss, '[data-print-region]'),
+      targetAfter: getExactRuleDeclarations(movedPageSize, '[data-print-region]'),
+      property: 'size',
+      value: 'A4 portrait',
+    });
 
     const movedPageMargin = moveDeclarationToUnrelatedRule(
       printCss,
@@ -295,8 +341,16 @@ describe('TeacherGuide', () => {
       'margin',
       '12mm',
     );
-    expect(hasDeclaration(getExactAtRuleBody(movedPageMargin, '@page'), 'margin', '12mm')).toBe(false);
-    expect(hasDeclaration(getExactRuleDeclarations(movedPageMargin, '[data-print-region]'), 'margin', '12mm')).toBe(true);
+    expectDeclarationMigrationContract({
+      originalCss: printCss,
+      mutatedCss: movedPageMargin,
+      sourceBefore: getExactAtRuleBody(printCss, '@page'),
+      sourceAfter: getExactAtRuleBody(movedPageMargin, '@page'),
+      targetBefore: getExactRuleDeclarations(printCss, '[data-print-region]'),
+      targetAfter: getExactRuleDeclarations(movedPageMargin, '[data-print-region]'),
+      property: 'margin',
+      value: '12mm',
+    });
 
     const movedGlobalBackground = moveDeclarationToUnrelatedRule(
       printCss,
@@ -305,9 +359,16 @@ describe('TeacherGuide', () => {
       'background',
       '#fff !important',
     );
-    const movedGlobalBackgroundDeclarations = getExactSelectorGroupDeclarations(movedGlobalBackground, ['html', 'body']);
-    expect(hasDeclaration(movedGlobalBackgroundDeclarations, 'background', '#fff !important')).toBe(false);
-    expect(hasDeclaration(getExactRuleDeclarations(movedGlobalBackground, '[data-print-region] *'), 'background', '#fff !important')).toBe(true);
+    expectDeclarationMigrationContract({
+      originalCss: printCss,
+      mutatedCss: movedGlobalBackground,
+      sourceBefore: getExactSelectorGroupDeclarations(printCss, ['html', 'body']),
+      sourceAfter: getExactSelectorGroupDeclarations(movedGlobalBackground, ['html', 'body']),
+      targetBefore: getExactRuleDeclarations(printCss, '[data-print-region] *'),
+      targetAfter: getExactRuleDeclarations(movedGlobalBackground, '[data-print-region] *'),
+      property: 'background',
+      value: '#fff !important',
+    });
 
     const movedGlobalColor = moveDeclarationToUnrelatedRule(
       printCss,
@@ -316,9 +377,16 @@ describe('TeacherGuide', () => {
       'color',
       '#111 !important',
     );
-    const movedGlobalColorDeclarations = getExactSelectorGroupDeclarations(movedGlobalColor, ['html', 'body']);
-    expect(hasDeclaration(movedGlobalColorDeclarations, 'color', '#111 !important')).toBe(false);
-    expect(hasDeclaration(getExactRuleDeclarations(movedGlobalColor, '[data-print-region] *'), 'color', '#111 !important')).toBe(true);
+    expectDeclarationMigrationContract({
+      originalCss: printCss,
+      mutatedCss: movedGlobalColor,
+      sourceBefore: getExactSelectorGroupDeclarations(printCss, ['html', 'body']),
+      sourceAfter: getExactSelectorGroupDeclarations(movedGlobalColor, ['html', 'body']),
+      targetBefore: getExactRuleDeclarations(printCss, '[data-print-region] *'),
+      targetAfter: getExactRuleDeclarations(movedGlobalColor, '[data-print-region] *'),
+      property: 'color',
+      value: '#111 !important',
+    });
 
     const movedPrintRegionBackground = moveDeclarationToUnrelatedRule(
       printCss,
@@ -327,8 +395,16 @@ describe('TeacherGuide', () => {
       'background',
       '#fff !important',
     );
-    expect(hasDeclaration(getExactRuleDeclarations(movedPrintRegionBackground, '[data-print-region] *'), 'background', '#fff !important')).toBe(false);
-    expect(hasDeclaration(getExactSelectorGroupDeclarations(movedPrintRegionBackground, ['html', 'body']), 'background', '#fff !important')).toBe(true);
+    expectDeclarationMigrationContract({
+      originalCss: printCss,
+      mutatedCss: movedPrintRegionBackground,
+      sourceBefore: getExactRuleDeclarations(printCss, '[data-print-region] *'),
+      sourceAfter: getExactRuleDeclarations(movedPrintRegionBackground, '[data-print-region] *'),
+      targetBefore: getExactSelectorGroupDeclarations(printCss, ['html', 'body']),
+      targetAfter: getExactSelectorGroupDeclarations(movedPrintRegionBackground, ['html', 'body']),
+      property: 'background',
+      value: '#fff !important',
+    });
 
     const movedPrintRegionColor = moveDeclarationToUnrelatedRule(
       printCss,
@@ -337,8 +413,16 @@ describe('TeacherGuide', () => {
       'color',
       '#111 !important',
     );
-    expect(hasDeclaration(getExactRuleDeclarations(movedPrintRegionColor, '[data-print-region] *'), 'color', '#111 !important')).toBe(false);
-    expect(hasDeclaration(getExactSelectorGroupDeclarations(movedPrintRegionColor, ['html', 'body']), 'color', '#111 !important')).toBe(true);
+    expectDeclarationMigrationContract({
+      originalCss: printCss,
+      mutatedCss: movedPrintRegionColor,
+      sourceBefore: getExactRuleDeclarations(printCss, '[data-print-region] *'),
+      sourceAfter: getExactRuleDeclarations(movedPrintRegionColor, '[data-print-region] *'),
+      targetBefore: getExactSelectorGroupDeclarations(printCss, ['html', 'body']),
+      targetAfter: getExactSelectorGroupDeclarations(movedPrintRegionColor, ['html', 'body']),
+      property: 'color',
+      value: '#111 !important',
+    });
   });
 
   it('rejects known false-pass print stylesheet mutations', () => {
