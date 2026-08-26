@@ -4,3 +4,20 @@
 }
 
 .gi-pulse { animation: gi-pulse 1.8s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0s !important;
+    scroll-behavior: auto !important;
+  }
+
+  .gi-pulse {
+    animation: none !important;
+    transform: none !important;
+    box-shadow: none !important;
+    outline: 3px solid var(--color-teal-dark);
+    outline-offset: 3px;
+  }
+}

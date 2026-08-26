@@ -1,10 +1,12 @@
 import type { CaseId, InitialHypothesis } from '../model/case';
 import type { CaseSession, ComparisonDraft, EvidenceSelection, RewriteDraft, StorageAdapter, PersistenceResult } from '../model/session';
+import { DEFAULT_READING_PREFERENCES, type ReadingPreferences } from '../model/ui';
 import { createInitialSession } from './sessionReducer';
 import { getCasePack } from '../content/caseIndex';
 
 export const SESSION_KEY = 'perspective-lens:session:v1';
 export const SAVED_MEMO_KEY = 'perspective-lens:saved-memo:v1';
+export const READING_PREFERENCES_KEY = 'perspective-lens:reading-prefs:v1';
 
 const caseIds = new Set<CaseId>(['playground-storage-box', 'missing-umbrella-tag', 'club-notice-poster', 'library-window-seat']);
 const stages = new Set(['intake', 'lenses', 'evidence', 'comparison', 'rewrite', 'report']);
@@ -13,6 +15,9 @@ const hypotheses = new Set<InitialHypothesis>(['seen-information', 'priority', '
 const categories = new Set(['observation', 'inference', 'evaluation']);
 const audiences = new Set(['classmate', 'new-reader', 'teacher']);
 const purposes = new Set(['report', 'guide', 'reflection']);
+const fontSizes = new Set([18, 20, 22]);
+const lineHeights = new Set([1.6, 1.8, 2]);
+const readingWidths = new Set(['narrow', 'standard']);
 const isObject = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
 const isStringArray = (value: unknown): value is string[] => Array.isArray(value) && value.every((item) => typeof item === 'string');
 const identifiers = (value: unknown): value is string[] => isStringArray(value) && value.every((item) => item.trim().length > 0);
@@ -20,6 +25,11 @@ const exactKeys = (value: Record<string, unknown>, keys: readonly string[]): boo
 const draft = (value: unknown): value is ComparisonDraft => isObject(value) && exactKeys(value, ['sharedFactOptionIds', 'differentExpressionOptionIds', 'missingInformationOptionIds', 'supportingSentenceIds']) && identifiers(value.sharedFactOptionIds) && identifiers(value.differentExpressionOptionIds) && identifiers(value.missingInformationOptionIds) && identifiers(value.supportingSentenceIds);
 const rewrite = (value: unknown): value is RewriteDraft => isObject(value) && exactKeys(value, ['targetNarratorId', 'audienceId', 'purposeId', 'blockIds']) && typeof value.targetNarratorId === 'string' && value.targetNarratorId.trim().length > 0 && typeof value.audienceId === 'string' && audiences.has(value.audienceId) && typeof value.purposeId === 'string' && purposes.has(value.purposeId) && identifiers(value.blockIds);
 const evidence = (value: unknown): value is EvidenceSelection => isObject(value) && exactKeys(value, ['sentenceId', 'categoryIds', 'selectedSegmentIds']) && typeof value.sentenceId === 'string' && value.sentenceId.trim().length > 0 && isStringArray(value.categoryIds) && value.categoryIds.every((id) => categories.has(id)) && identifiers(value.selectedSegmentIds);
+const validReadingPreferences = (value: unknown): value is ReadingPreferences => isObject(value)
+  && exactKeys(value, ['fontSize', 'lineHeight', 'readingWidth'])
+  && typeof value.fontSize === 'number' && fontSizes.has(value.fontSize)
+  && typeof value.lineHeight === 'number' && lineHeights.has(value.lineHeight)
+  && typeof value.readingWidth === 'string' && readingWidths.has(value.readingWidth);
 
 const validSession = (value: unknown): value is CaseSession => {
   if (!isObject(value) || value.version !== 1 || (value.caseId !== null && (!caseIds.has(value.caseId as CaseId))) || typeof value.stage !== 'string' || !stages.has(value.stage) || typeof value.comparisonPhase !== 'string' || !phases.has(value.comparisonPhase)) return false;
@@ -101,4 +111,27 @@ export function saveMemo(storage: StorageAdapter, memo: string): PersistenceResu
 }
 export function deleteSavedMemo(storage: StorageAdapter): PersistenceResult {
   try { storage.removeItem(SAVED_MEMO_KEY); return { ok: true }; } catch (error) { return classify(error); }
+}
+
+export function loadReadingPreferences(storage: StorageAdapter): ReadingPreferences {
+  try {
+    const raw = storage.getItem(READING_PREFERENCES_KEY);
+    if (!raw) return { ...DEFAULT_READING_PREFERENCES };
+    const parsed: unknown = JSON.parse(raw);
+    return validReadingPreferences(parsed) ? { ...parsed } : { ...DEFAULT_READING_PREFERENCES };
+  } catch {
+    return { ...DEFAULT_READING_PREFERENCES };
+  }
+}
+
+export function saveReadingPreferences(storage: StorageAdapter, preferences: ReadingPreferences): PersistenceResult {
+  if (!validReadingPreferences(preferences)) return { ok: false, reason: 'invalid-data' };
+  try {
+    storage.setItem(READING_PREFERENCES_KEY, JSON.stringify({
+      fontSize: preferences.fontSize,
+      lineHeight: preferences.lineHeight,
+      readingWidth: preferences.readingWidth,
+    }));
+    return { ok: true };
+  } catch (error) { return classify(error); }
 }

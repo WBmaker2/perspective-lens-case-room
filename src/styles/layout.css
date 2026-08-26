@@ -5,13 +5,15 @@
   --color-navy: #233044;
   --color-teal-dark: #0f766e;
   --color-orange-dark: #c2410c;
-  --reading-size: 18px;
+  --reading-size: 20px;
+  --reading-line-height: 1.8;
+  --reading-width: 68ch;
   --radius-sm: 0.35rem;
   --radius-md: 0.75rem;
   --radius-lg: 1rem;
 }
 
-body { min-width: 320px; }
+body { min-width: 320px; font-size: var(--reading-size); line-height: var(--reading-line-height); }
 button, input { font: inherit; }
 button { color: inherit; }
 button:focus-visible, input:focus-visible, [tabindex="-1"]:focus-visible {
@@ -23,6 +25,56 @@ button:focus-visible, input:focus-visible, [tabindex="-1"]:focus-visible {
   max-width: 76rem;
   margin: 0 auto;
   padding: 1.5rem clamp(1rem, 4vw, 3.5rem) 4rem;
+}
+
+.stage-content {
+  width: min(100%, var(--reading-width));
+  font-size: var(--reading-size);
+  line-height: var(--reading-line-height);
+}
+
+.utility-group {
+  position: fixed;
+  right: max(1rem, env(safe-area-inset-right));
+  bottom: max(1rem, env(safe-area-inset-bottom));
+  z-index: 20;
+  display: flex;
+  gap: 0.45rem;
+  padding: 0.35rem;
+  border: 1px solid var(--color-line);
+  border-radius: 999px;
+  background: rgba(247, 244, 238, 0.96);
+  box-shadow: 0 0.4rem 1rem rgba(35, 48, 68, 0.12);
+}
+
+.utility-button {
+  min-width: 44px;
+  min-height: 44px;
+  border: 1px solid var(--color-teal-dark);
+  border-radius: 999px;
+  background: transparent;
+  padding: 0.45rem 0.7rem;
+  color: var(--color-teal-dark);
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.utility-button:hover, .utility-button[aria-expanded="true"] { background: #e5f3f0; }
+.utility-warning {
+  position: fixed;
+  right: 1rem;
+  bottom: calc(4.6rem + env(safe-area-inset-bottom));
+  z-index: 20;
+  max-width: min(24rem, calc(100vw - 2rem));
+  margin: 0;
+  border: 1px solid var(--color-orange-dark);
+  border-radius: var(--radius-sm);
+  background: #fff8ef;
+  padding: 0.55rem 0.7rem;
+  color: var(--color-orange-dark);
+  font-size: 0.75rem;
+  line-height: 1.4;
 }
 
 .app-header {

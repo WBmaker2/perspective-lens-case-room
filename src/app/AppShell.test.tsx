@@ -5,7 +5,7 @@ import { missingUmbrellaTag } from '../content/cases/missingUmbrellaTag';
 import { playgroundStorageBox } from '../content/cases/playgroundStorageBox';
 import { clubNoticePoster } from '../content/cases/clubNoticePoster';
 import { createInitialSession } from '../domain/sessionReducer';
-import { SAVED_MEMO_KEY, SESSION_KEY } from '../domain/sessionPersistence';
+import { READING_PREFERENCES_KEY, SAVED_MEMO_KEY, SESSION_KEY } from '../domain/sessionPersistence';
 import type { CaseSession, StorageAdapter } from '../model/session';
 import { AppShell } from './AppShell';
 
@@ -45,7 +45,10 @@ const completeReportSession = (): CaseSession => ({
 });
 
 describe('AppShell', () => {
-  beforeEach(() => sessionStorage.clear());
+  beforeEach(() => {
+    sessionStorage.clear();
+    localStorage.clear();
+  });
 
   it('orients the learner, then advances from intake only after a hypothesis', async () => {
     const user = userEvent.setup();
@@ -183,7 +186,7 @@ describe('AppShell', () => {
       removeItem: (key) => { data.delete(key); },
     };
     data.set(SESSION_KEY, JSON.stringify({ ...createInitialSession(), caseId: clubNoticePoster.id, stage: 'rewrite' }));
-    render(<AppShell storage={storage} />);
+    render(<AppShell storage={storage} persistentStorage={storage} />);
 
     await user.click(screen.getByRole('radio', { name: '나래' }));
     await user.click(screen.getByRole('radio', { name: '같은 반 친구' }));
@@ -228,7 +231,7 @@ describe('AppShell', () => {
   it('confirms report reset while preserving an explicitly saved memo', async () => {
     const user = userEvent.setup();
     sessionStorage.setItem(SESSION_KEY, JSON.stringify(completeReportSession()));
-    sessionStorage.setItem(SAVED_MEMO_KEY, '저장해 둔 메모');
+    localStorage.setItem(SAVED_MEMO_KEY, '저장해 둔 메모');
     render(<AppShell />);
 
     await user.click(screen.getByRole('button', { name: '다른 사건 접수' }));
@@ -237,7 +240,7 @@ describe('AppShell', () => {
     await waitFor(() => expect(screen.getByRole('heading', { name: '사건 접수' })).toBeInTheDocument());
     const persisted = JSON.parse(sessionStorage.getItem(SESSION_KEY) ?? '{}') as CaseSession;
     expect(persisted).toMatchObject({ caseId: null, stage: 'intake', initialHypothesis: null });
-    expect(sessionStorage.getItem(SAVED_MEMO_KEY)).toBe('저장해 둔 메모');
+    expect(localStorage.getItem(SAVED_MEMO_KEY)).toBe('저장해 둔 메모');
   });
 
   it('recovers an incomplete persisted report with a backward review action', async () => {
@@ -257,7 +260,7 @@ describe('AppShell', () => {
   it('keeps incomplete-report reset behind the same explicit confirmation', async () => {
     const user = userEvent.setup();
     sessionStorage.setItem(SESSION_KEY, JSON.stringify({ ...createInitialSession(), caseId: missingUmbrellaTag.id, stage: 'report' }));
-    sessionStorage.setItem(SAVED_MEMO_KEY, '저장해 둔 메모');
+    localStorage.setItem(SAVED_MEMO_KEY, '저장해 둔 메모');
     render(<AppShell />);
 
     const trigger = screen.getByRole('button', { name: '다른 사건 접수' });
@@ -269,6 +272,55 @@ describe('AppShell', () => {
     await user.click(trigger);
     await user.click(screen.getByRole('button', { name: '현재 기록 지우고 새 사건 접수' }));
     await waitFor(() => expect(screen.getByRole('heading', { name: '사건 접수' })).toBeInTheDocument());
-    expect(sessionStorage.getItem(SAVED_MEMO_KEY)).toBe('저장해 둔 메모');
+    expect(localStorage.getItem(SAVED_MEMO_KEY)).toBe('저장해 둔 메모');
+  });
+
+  it('keeps fixed utilities available without changing the active case session', async () => {
+    const user = userEvent.setup();
+    const session = completeReportSession();
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
+    render(<AppShell />);
+    const before = sessionStorage.getItem(SESSION_KEY);
+    const updates = screen.getByRole('button', { name: '업데이트 내역' });
+    expect(updates).toHaveAttribute('aria-haspopup', 'dialog');
+    expect(updates).toHaveAttribute('aria-expanded', 'false');
+
+    await user.click(updates);
+    expect(updates).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByRole('dialog', { name: '업데이트 내역' })).toBeInTheDocument();
+    expect(sessionStorage.getItem(SESSION_KEY)).toBe(before);
+    await user.click(screen.getByRole('button', { name: '닫기' }));
+    expect(updates).toHaveFocus();
+
+    const settings = screen.getByRole('button', { name: '읽기 설정' });
+    await user.click(settings);
+    await user.click(screen.getByRole('radio', { name: '22px' }));
+    const shell = document.querySelector<HTMLElement>('.app-shell');
+    expect(shell?.style.getPropertyValue('--reading-size')).toBe('22px');
+    expect(shell?.style.getPropertyValue('--reading-line-height')).toBe('1.8');
+    expect(shell?.style.getPropertyValue('--reading-width')).toBe('68ch');
+    expect(sessionStorage.getItem(SESSION_KEY)).toBe(before);
+    expect(localStorage.getItem(READING_PREFERENCES_KEY)).toContain('22');
+    await user.keyboard('{Escape}');
+    expect(settings).toHaveFocus();
+  });
+
+  it('uses separate injected session and persistent adapters', async () => {
+    const user = userEvent.setup();
+    const sessionData = new Map<string, string>();
+    const localData = new Map<string, string>();
+    const adapter = (data: Map<string, string>): StorageAdapter => ({
+      getItem: (key) => data.get(key) ?? null,
+      setItem: (key, value) => { data.set(key, value); },
+      removeItem: (key) => { data.delete(key); },
+    });
+    sessionData.set(SESSION_KEY, JSON.stringify({ ...createInitialSession(), caseId: clubNoticePoster.id, stage: 'rewrite' }));
+    render(<AppShell storage={adapter(sessionData)} persistentStorage={adapter(localData)} />);
+
+    await user.click(screen.getByRole('button', { name: '읽기 설정' }));
+    await user.click(screen.getByRole('radio', { name: '22px' }));
+    expect(sessionData.has(READING_PREFERENCES_KEY)).toBe(false);
+    expect(sessionData.has(SAVED_MEMO_KEY)).toBe(false);
+    expect(localData.has(READING_PREFERENCES_KEY)).toBe(true);
   });
 });

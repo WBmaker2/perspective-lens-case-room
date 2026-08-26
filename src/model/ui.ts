@@ -1,4 +1,30 @@
+import type { CaseId } from './case';
 import type { StageId } from './session';
+
+export interface ReadingPreferences {
+  fontSize: 18 | 20 | 22;
+  lineHeight: 1.6 | 1.8 | 2;
+  readingWidth: 'narrow' | 'standard';
+}
+
+export type UpdateEntry =
+  | {
+      date: `${number}-${number}-${number}`;
+      category: '설계' | '개발' | '개선';
+      summary: string;
+    }
+  | {
+      date: `${number}-${number}-${number}`;
+      category: '콘텐츠 검수' | '표현 수정';
+      caseId: CaseId;
+      summary: string;
+    };
+
+export const DEFAULT_READING_PREFERENCES: ReadingPreferences = {
+  fontSize: 20,
+  lineHeight: 1.8,
+  readingWidth: 'standard',
+};
 
 export interface AppViewModel {
   session: import('./session').CaseSession;

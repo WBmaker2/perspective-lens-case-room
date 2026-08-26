@@ -1,9 +1,15 @@
+import { useCallback, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { casePacks } from '../content/caseIndex';
+import { loadReadingPreferences, saveReadingPreferences } from '../domain/sessionPersistence';
 import { safetyCopy } from '../content/safetyCopy';
 import { getStageGate } from '../domain/sessionReducer';
 import type { CaseId, InitialHypothesis } from '../model/case';
 import type { CaseAction, ComparisonDraft, EvidenceSelection, RewriteDraft, StageId, StorageAdapter } from '../model/session';
 import type { AppViewModel } from '../model/ui';
+import type { ReadingPreferences } from '../model/ui';
+import { ModalDialog } from '../components/ModalDialog';
+import { ReadingSettings } from '../features/settings/ReadingSettings';
+import { UpdateHistoryDialog } from '../features/updates/UpdateHistoryDialog';
 import { ProgressSteps } from '../components/ProgressSteps';
 import { StageRenderer } from './StageRenderer';
 import { useCaseSession } from './useCaseSession';
@@ -11,14 +17,46 @@ import { useStageFocus } from './useStageFocus';
 
 export interface AppShellProps {
   storage?: StorageAdapter;
+  persistentStorage?: StorageAdapter;
+  localStorage?: StorageAdapter;
+}
+
+const persistentMemory = new Map<string, string>();
+const fallbackPersistentStorage: StorageAdapter = {
+  getItem: (key) => persistentMemory.get(key) ?? null,
+  setItem: (key, value) => { persistentMemory.set(key, value); },
+  removeItem: (key) => { persistentMemory.delete(key); },
+};
+
+function browserPersistentStorage(): StorageAdapter {
+  if (typeof window === 'undefined') return fallbackPersistentStorage;
+  try {
+    const storage = window.localStorage;
+    return {
+      getItem: (key) => storage.getItem(key),
+      setItem: (key, value) => storage.setItem(key, value),
+      removeItem: (key) => storage.removeItem(key),
+    };
+  } catch {
+    return fallbackPersistentStorage;
+  }
 }
 
 // MemoPad owns the single live persistence status. Keep the callback contract
 // for the stage renderer without rendering the same announcement twice.
 const ignoreMemoPersistenceMessage = (message: string): void => { void message; };
 
-export function AppShell({ storage }: AppShellProps = {}) {
-  const { session, dispatch, persistenceWarning, storage: sessionStorage } = useCaseSession(storage);
+export function AppShell({ storage, persistentStorage, localStorage: injectedLocalStorage }: AppShellProps = {}) {
+  const { session, dispatch, persistenceWarning } = useCaseSession(storage);
+  const persistentAdapter = useMemo(
+    () => persistentStorage ?? injectedLocalStorage ?? browserPersistentStorage(),
+    [injectedLocalStorage, persistentStorage],
+  );
+  const [readingPreferences, setReadingPreferences] = useState<ReadingPreferences>(() => loadReadingPreferences(persistentAdapter));
+  const [readingWarning, setReadingWarning] = useState<string | null>(null);
+  const [openUtility, setOpenUtility] = useState<'reading' | 'updates' | null>(null);
+  const readingTriggerRef = useRef<HTMLButtonElement>(null);
+  const updatesTriggerRef = useRef<HTMLButtonElement>(null);
   const selectedPack = session.caseId ? casePacks.find((pack) => pack.id === session.caseId) ?? null : null;
   const gate = selectedPack ? getStageGate(session, selectedPack) : { ready: false, reason: 'case-not-selected' };
   const viewModel: AppViewModel = { session, selectedPack, gate };
@@ -39,9 +77,20 @@ export function AppShell({ storage }: AppShellProps = {}) {
   const saveRewrite = (draft: RewriteDraft) => send({ type: 'SET_REWRITE_DRAFT', draft });
   const revisitStage = (stage: Exclude<StageId, 'intake'>) => send({ type: 'REVISIT_STAGE', stage });
   const resetCase = () => send({ type: 'RESET_CASE' });
+  const closeUtility = useCallback(() => setOpenUtility(null), []);
+  const changeReadingPreferences = useCallback((preferences: ReadingPreferences) => {
+    setReadingPreferences(preferences);
+    const result = saveReadingPreferences(persistentAdapter, preferences);
+    setReadingWarning(result.ok ? null : '읽기 설정을 저장하지 못했지만 현재 화면에는 적용했어요.');
+  }, [persistentAdapter]);
+  const readingStyle: CSSProperties = {
+    '--reading-size': `${readingPreferences.fontSize}px`,
+    '--reading-line-height': `${readingPreferences.lineHeight}`,
+    '--reading-width': readingPreferences.readingWidth === 'standard' ? '68ch' : '48ch',
+  } as CSSProperties;
 
   return (
-    <main className="app-shell">
+    <main className="app-shell" style={readingStyle}>
       <header className="app-header">
         <div className="app-header__brand">
           <span className="brand-mark" aria-hidden="true">PL</span>
@@ -73,9 +122,44 @@ export function AppShell({ storage }: AppShellProps = {}) {
         onSaveRewrite={saveRewrite}
         onRevisitStage={revisitStage}
         onReset={resetCase}
-        storage={sessionStorage}
+        storage={persistentAdapter}
         onPersistenceMessage={ignoreMemoPersistenceMessage}
         onContinue={continueStage}
+      />
+      <div className="utility-group" aria-label="학습 도구">
+        <button
+          ref={readingTriggerRef}
+          className="utility-button"
+          type="button"
+          aria-haspopup="dialog"
+          aria-expanded={openUtility === 'reading'}
+          aria-controls="reading-settings-dialog"
+          onClick={() => setOpenUtility('reading')}
+        >읽기 설정</button>
+        <button
+          ref={updatesTriggerRef}
+          className="utility-button"
+          type="button"
+          aria-haspopup="dialog"
+          aria-expanded={openUtility === 'updates'}
+          aria-controls="update-history-dialog"
+          onClick={() => setOpenUtility('updates')}
+        >업데이트 내역</button>
+      </div>
+      {readingWarning ? <p className="utility-warning" role="status">{readingWarning}</p> : null}
+      <ModalDialog
+        id="reading-settings-dialog"
+        title="읽기 설정"
+        open={openUtility === 'reading'}
+        triggerRef={readingTriggerRef}
+        onClose={closeUtility}
+      >
+        <ReadingSettings preferences={readingPreferences} onChange={changeReadingPreferences} />
+      </ModalDialog>
+      <UpdateHistoryDialog
+        open={openUtility === 'updates'}
+        triggerRef={updatesTriggerRef}
+        onClose={closeUtility}
       />
     </main>
   );

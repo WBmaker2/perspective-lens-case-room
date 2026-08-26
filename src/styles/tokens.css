@@ -5,5 +5,8 @@
   --color-accent: #4b6cb7;
   --color-teal: #0f766e;
   --color-orange: #c2410c;
+  --reading-size: 20px;
+  --reading-line-height: 1.8;
+  --reading-width: 68ch;
   --font-body: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }

@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { makeCasePackFixture } from '../test/fixtures/casePackFixture';
 import { playgroundStorageBox } from '../content/cases/playgroundStorageBox';
 import { createInitialSession } from './sessionReducer';
-import { clearSession, deleteSavedMemo, loadSavedMemo, loadSession, saveMemo, saveSession, SESSION_KEY, SAVED_MEMO_KEY } from './sessionPersistence';
+import { clearSession, deleteSavedMemo, loadReadingPreferences, loadSavedMemo, loadSession, READING_PREFERENCES_KEY, saveMemo, saveReadingPreferences, saveSession, SESSION_KEY, SAVED_MEMO_KEY } from './sessionPersistence';
+import { DEFAULT_READING_PREFERENCES } from '../model/ui';
 import type { StorageAdapter } from '../model/session';
 
 class MemoryStorage implements StorageAdapter {
@@ -64,5 +65,30 @@ describe('session persistence boundaries', () => {
     const session = { ...createInitialSession(), caseId: 'playground-storage-box' as const, stage: 'rewrite' as const, rewriteDraft: { targetNarratorId: rule.targetNarratorId, audienceId: rule.audienceId, purposeId: rule.purposeId, blockIds: [...rule.acceptedExampleBlockSets[0]!] } };
     storage.data.set(SESSION_KEY, JSON.stringify(session));
     expect(loadSession(storage).rewriteDraft).toEqual(session.rewriteDraft);
+  });
+
+  it('keeps reading preferences in their own local key with exact-shape validation', () => {
+    const storage = new MemoryStorage();
+    expect(loadReadingPreferences(storage)).toEqual(DEFAULT_READING_PREFERENCES);
+    expect(saveReadingPreferences(storage, { fontSize: 22, lineHeight: 2, readingWidth: 'narrow' })).toEqual({ ok: true });
+    expect([...storage.data.keys()]).toEqual([READING_PREFERENCES_KEY]);
+    expect(loadReadingPreferences(storage)).toEqual({ fontSize: 22, lineHeight: 2, readingWidth: 'narrow' });
+
+    for (const malformed of [
+      { fontSize: 20, lineHeight: 1.8, readingWidth: 'standard', extra: true },
+      { fontSize: 19, lineHeight: 1.8, readingWidth: 'standard' },
+      { fontSize: 20, lineHeight: 1.7, readingWidth: 'standard' },
+      { fontSize: 20, lineHeight: 1.8, readingWidth: 'wide' },
+      '{bad',
+    ]) {
+      storage.data.set(READING_PREFERENCES_KEY, JSON.stringify(malformed));
+      expect(loadReadingPreferences(storage)).toEqual(DEFAULT_READING_PREFERENCES);
+    }
+  });
+
+  it('keeps the active preference in memory when preference saving is unavailable', () => {
+    const storage: StorageAdapter = { getItem: () => null, removeItem: () => undefined, setItem: () => { throw new Error('blocked'); } };
+    expect(saveReadingPreferences(storage, { fontSize: 18, lineHeight: 1.6, readingWidth: 'standard' })).toEqual({ ok: false, reason: 'unavailable' });
+    expect(saveReadingPreferences(storage, { fontSize: 17 as 18, lineHeight: 1.6, readingWidth: 'standard' })).toEqual({ ok: false, reason: 'invalid-data' });
   });
 });
