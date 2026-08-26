@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useEffect, useRef } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -95,7 +95,7 @@ describe('ModalDialog', () => {
       </>,
     );
 
-    expect(screen.getAllByRole('dialog')).toHaveLength(2);
+    expect(screen.getAllByRole('dialog', { hidden: true })).toHaveLength(2);
     expect(document.querySelectorAll('[role="dialog"][aria-modal="true"]')).toHaveLength(1);
     expect(shell).toHaveAttribute('inert');
     expect(shell).toHaveAttribute('aria-hidden', 'true');
@@ -111,5 +111,41 @@ describe('ModalDialog', () => {
     view.rerender(<></>);
     expect(shell).toHaveAttribute('inert');
     expect(shell).toHaveAttribute('aria-hidden', 'false');
+  });
+
+  it('focuses the newly active dialog after a stacked modal closes', async () => {
+    const firstTriggerRef = { current: null };
+    const secondTriggerRef = { current: null };
+    const view = render(
+      <>
+        <ModalDialog id="first-dialog" title="첫 대화상자" open triggerRef={firstTriggerRef} onClose={vi.fn()}>
+          <button type="button">첫 번째 확인</button>
+        </ModalDialog>
+        <ModalDialog id="second-dialog" title="둘째 대화상자" open triggerRef={secondTriggerRef} onClose={vi.fn()}>
+          <button type="button">둘째 확인</button>
+        </ModalDialog>
+      </>,
+    );
+
+    const dialogs = screen.getAllByRole('dialog', { hidden: true });
+    expect(dialogs).toHaveLength(2);
+    expect(dialogs[0]).toHaveAttribute('inert');
+    expect(dialogs[0]).toHaveAttribute('aria-hidden', 'true');
+    expect(dialogs[1]).toHaveAttribute('aria-modal', 'true');
+    expect(document.querySelectorAll('[role="dialog"][aria-modal="true"]')).toHaveLength(1);
+
+    view.rerender(
+      <ModalDialog id="first-dialog" title="첫 대화상자" open triggerRef={firstTriggerRef} onClose={vi.fn()}>
+        <button type="button">첫 번째 확인</button>
+      </ModalDialog>,
+    );
+
+    await waitFor(() => {
+      const activeDialog = screen.getByRole('dialog', { name: '첫 대화상자' });
+      expect(activeDialog).toHaveAttribute('aria-modal', 'true');
+      expect(activeDialog).not.toHaveAttribute('inert');
+      expect(screen.getByRole('button', { name: '닫기' })).toHaveFocus();
+      expect(document.querySelectorAll('[role="dialog"][aria-modal="true"]')).toHaveLength(1);
+    });
   });
 });

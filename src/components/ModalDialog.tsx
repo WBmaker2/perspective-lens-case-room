@@ -36,7 +36,11 @@ export function ModalDialog({ id, title, open, triggerRef, children, onClose, sh
 
     wasOpenRef.current = true;
     acquireModalLock(token);
+    return () => releaseModalLock(token);
+  }, [open, triggerRef, token]);
 
+  useEffect(() => {
+    if (!open || !active) return undefined;
     const dialog = dialogRef.current;
     const getFocusable = (): HTMLElement[] => dialog
       ? Array.from(dialog.querySelectorAll<HTMLElement>(focusableSelector))
@@ -71,9 +75,8 @@ export function ModalDialog({ id, title, open, triggerRef, children, onClose, sh
     document.addEventListener('keydown', handleKeyDown);
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
-      releaseModalLock(token);
     };
-  }, [open, onClose, triggerRef, token]);
+  }, [open, active, onClose, token]);
 
   if (!open || typeof document === 'undefined') return null;
   return createPortal(
@@ -84,6 +87,7 @@ export function ModalDialog({ id, title, open, triggerRef, children, onClose, sh
         id={id}
         role="dialog"
         aria-modal={active ? 'true' : undefined}
+        aria-hidden={!active ? 'true' : undefined}
         inert={!active ? true : undefined}
         aria-labelledby={`${id}-title`}
         tabIndex={-1}
