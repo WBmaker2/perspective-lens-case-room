@@ -21,6 +21,18 @@ const cloneComparison = (value: ComparisonDraft): ComparisonDraft => ({
 });
 const cloneRewrite = (value: RewriteDraft): RewriteDraft => ({ ...value, blockIds: [...value.blockIds] });
 const unique = (values: readonly string[]): string[] => [...new Set(values)];
+const revealRecordIds = (pack: CasePack): string[] => pack.neutralRecords
+  .filter((record) => record.visibility === 'reveal')
+  .map((record) => record.id);
+const hasExactIdSet = (actual: readonly string[], required: readonly string[]): boolean => {
+  const actualSet = new Set(actual);
+  const requiredSet = new Set(required);
+  return actualSet.size === requiredSet.size && [...actualSet].every((id) => requiredSet.has(id));
+};
+const normalizeInOrder = (values: readonly string[], order: readonly string[]): string[] => {
+  const selected = new Set(values);
+  return order.filter((id) => selected.has(id));
+};
 
 export function createInitialSession(): CaseSession {
   return {
@@ -58,6 +70,7 @@ export function getStageGate(session: CaseSession, pack: CasePack): StageGate {
     const initial = evaluateComparison(pack, session.initialComparison);
     if (initial.status !== 'supported') return { ready: false, reason: 'supported-initial-comparison-required' };
     if (session.comparisonPhase !== 'revised' || session.revisedComparison === null) return { ready: false, reason: 'revised-comparison-required' };
+    if (!hasExactIdSet(session.revealedRecordIds, revealRecordIds(pack))) return { ready: false, reason: 'all-reveal-records-required' };
     if (evaluateComparison(pack, session.revisedComparison).status !== 'supported') return { ready: false, reason: 'supported-revised-comparison-required' };
     if (session.revisionEvidenceSentenceIds.length === 0) return { ready: false, reason: 'revision-evidence-required' };
     return { ready: true, reason: 'ready' };
@@ -100,14 +113,16 @@ export function caseSessionReducer(session: CaseSession, action: CaseAction, res
       if (!session.caseId || !session.initialComparison || session.comparisonPhase !== 'reveal') return session;
       const pack = resolveCasePack(session.caseId);
       if (evaluateComparison(pack, session.initialComparison).status !== 'supported') return session;
-      const revealIds = new Set(pack.neutralRecords.filter((record) => record.visibility === 'reveal').map((record) => record.id));
+      if (!Array.isArray(action.recordIds)) return session;
+      const requiredRevealIds = revealRecordIds(pack);
       const ids = unique(action.recordIds);
-      if (ids.length === 0 || ids.some((id) => !revealIds.has(id))) return session;
-      return { ...session, revealedRecordIds: unique([...session.revealedRecordIds, ...ids]), comparisonPhase: 'revised' };
+      if (!hasExactIdSet(ids, requiredRevealIds)) return session;
+      return { ...session, revealedRecordIds: normalizeInOrder(ids, requiredRevealIds), comparisonPhase: 'revised' };
     }
     case 'SAVE_REVISED_COMPARISON': {
       if (!session.caseId || !session.initialComparison || session.comparisonPhase !== 'revised' || session.revealedRecordIds.length === 0) return session;
       const pack = resolveCasePack(session.caseId);
+      if (!hasExactIdSet(session.revealedRecordIds, revealRecordIds(pack))) return session;
       if (evaluateComparison(pack, session.initialComparison).status !== 'supported' || evaluateComparison(pack, action.draft).status !== 'supported') return session;
       const sentenceIds = new Set(pack.narrators.flatMap((narrator) => narrator.sentences.map((sentence) => sentence.id)));
       const evidenceIds = unique(action.revisionEvidenceSentenceIds);

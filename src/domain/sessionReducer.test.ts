@@ -32,24 +32,40 @@ describe('caseSessionReducer', () => {
 
   it('reveal rejects unsupported initial and invalid IDs, then succeeds with a real record', () => {
     const draft = supportedDraftFor();
+    const revealIds = missingUmbrellaTag.neutralRecords.filter((record) => record.visibility === 'reveal').map((record) => record.id);
     const unsupported = { ...draft, supportingSentenceIds: [] };
     const session: CaseSession = { ...createInitialSession(), caseId: missingUmbrellaTag.id, stage: 'comparison', comparisonPhase: 'reveal', initialComparison: unsupported };
     expect(caseSessionReducer(session, { type: 'REVEAL_RECORDS', recordIds: ['missing'] }, () => missingUmbrellaTag)).toBe(session);
     const ready = { ...session, initialComparison: draft };
     expect(caseSessionReducer(ready, { type: 'REVEAL_RECORDS', recordIds: ['missing'] }, () => missingUmbrellaTag)).toBe(ready);
-    const revealId = missingUmbrellaTag.neutralRecords.find((record) => record.visibility === 'reveal')!.id;
-    expect(caseSessionReducer(ready, { type: 'REVEAL_RECORDS', recordIds: [revealId] }, () => missingUmbrellaTag).comparisonPhase).toBe('revised');
+    expect(caseSessionReducer(ready, { type: 'REVEAL_RECORDS', recordIds: [revealIds[0]!] }, () => missingUmbrellaTag)).toBe(ready);
+    expect(caseSessionReducer(ready, { type: 'REVEAL_RECORDS', recordIds: [...revealIds].reverse() }, () => missingUmbrellaTag).comparisonPhase).toBe('revised');
   });
 
   it('revision rejects unsupported drafts and invalid reasons, then accepts supported revision', () => {
     const draft = supportedDraftFor();
-    const revealId = missingUmbrellaTag.neutralRecords.find((record) => record.visibility === 'reveal')!.id;
-    const session: CaseSession = { ...createInitialSession(), caseId: missingUmbrellaTag.id, initialComparison: draft, comparisonPhase: 'revised', revealedRecordIds: [revealId] };
+    const revealIds = missingUmbrellaTag.neutralRecords.filter((record) => record.visibility === 'reveal').map((record) => record.id);
+    const session: CaseSession = { ...createInitialSession(), caseId: missingUmbrellaTag.id, initialComparison: draft, comparisonPhase: 'revised', revealedRecordIds: [...revealIds] };
     const unsupported = { ...draft, supportingSentenceIds: [] };
     expect(caseSessionReducer(session, { type: 'SAVE_REVISED_COMPARISON', draft: unsupported, revisionEvidenceSentenceIds: ['mut-a-4'] }, () => missingUmbrellaTag)).toBe(session);
     expect(caseSessionReducer(session, { type: 'SAVE_REVISED_COMPARISON', draft, revisionEvidenceSentenceIds: ['unknown'] }, () => missingUmbrellaTag)).toBe(session);
     expect(caseSessionReducer(session, { type: 'SAVE_REVISED_COMPARISON', draft, revisionEvidenceSentenceIds: [] }, () => missingUmbrellaTag)).toBe(session);
     expect(caseSessionReducer(session, { type: 'SAVE_REVISED_COMPARISON', draft, revisionEvidenceSentenceIds: ['mut-a-4'] }, () => missingUmbrellaTag).revisedComparison).toEqual(draft);
+  });
+
+  it('requires every reveal record in the comparison gate and revised-save gate', () => {
+    const draft = supportedDraftFor();
+    const revealIds = missingUmbrellaTag.neutralRecords.filter((record) => record.visibility === 'reveal').map((record) => record.id);
+    const partial: CaseSession = {
+      ...createInitialSession(), caseId: missingUmbrellaTag.id, stage: 'comparison', comparisonPhase: 'revised',
+      initialComparison: draft, revisedComparison: draft, revealedRecordIds: [revealIds[0]!], revisionEvidenceSentenceIds: ['mut-a-4'],
+    };
+    expect(getStageGate(partial, missingUmbrellaTag)).toEqual({ ready: false, reason: 'all-reveal-records-required' });
+    expect(caseSessionReducer(partial, { type: 'SAVE_REVISED_COMPARISON', draft, revisionEvidenceSentenceIds: ['mut-a-4'] }, () => missingUmbrellaTag)).toBe(partial);
+
+    const complete = { ...partial, revealedRecordIds: [...revealIds].reverse().concat(revealIds[0]!) };
+    expect(getStageGate(complete, missingUmbrellaTag).ready).toBe(true);
+    expect(caseSessionReducer(complete, { type: 'SAVE_REVISED_COMPARISON', draft, revisionEvidenceSentenceIds: ['mut-a-4'] }, () => missingUmbrellaTag).revisedComparison).toEqual(draft);
   });
 
   it('rewrite gate accepts a supported fixture set and rejects its real contradiction', () => {
@@ -99,8 +115,8 @@ describe('caseSessionReducer', () => {
     const draft = supportedDraftFor();
     const afterInitial = caseSessionReducer(session, { type: 'SAVE_INITIAL_COMPARISON', draft }, () => missingUmbrellaTag);
     const revised = { ...draft, supportingSentenceIds: [...draft.supportingSentenceIds] };
-    const revealId = missingUmbrellaTag.neutralRecords.find((record) => record.visibility === 'reveal')!.id;
-    const afterReveal = caseSessionReducer(afterInitial, { type: 'REVEAL_RECORDS', recordIds: [revealId] }, () => missingUmbrellaTag);
+    const revealIds = missingUmbrellaTag.neutralRecords.filter((record) => record.visibility === 'reveal').map((record) => record.id);
+    const afterReveal = caseSessionReducer(afterInitial, { type: 'REVEAL_RECORDS', recordIds: [...revealIds] }, () => missingUmbrellaTag);
     const afterRevision = caseSessionReducer(afterReveal, { type: 'SAVE_REVISED_COMPARISON', draft: revised, revisionEvidenceSentenceIds: ['mut-a-4'] }, () => missingUmbrellaTag);
     expect(afterRevision.initialComparison).toEqual(draft);
     expect(afterRevision.revisedComparison).toEqual(revised);
@@ -110,9 +126,9 @@ describe('caseSessionReducer', () => {
   it('adds revealed records without changing the initial comparison', () => {
     const draft = supportedDraftFor();
     const session: CaseSession = { ...createInitialSession(), caseId: missingUmbrellaTag.id, comparisonPhase: 'reveal', initialComparison: draft };
-    const revealId = missingUmbrellaTag.neutralRecords.find((record) => record.visibility === 'reveal')!.id;
-    const next = caseSessionReducer(session, { type: 'REVEAL_RECORDS', recordIds: [revealId] }, () => missingUmbrellaTag);
-    expect(next.revealedRecordIds).toEqual([revealId]);
+    const revealIds = missingUmbrellaTag.neutralRecords.filter((record) => record.visibility === 'reveal').map((record) => record.id);
+    const next = caseSessionReducer(session, { type: 'REVEAL_RECORDS', recordIds: [...revealIds] }, () => missingUmbrellaTag);
+    expect(next.revealedRecordIds).toEqual(revealIds);
     expect(next.initialComparison).toEqual(draft);
   });
 
@@ -129,8 +145,8 @@ describe('caseSessionReducer', () => {
     state = caseSessionReducer(state, { type: 'ADVANCE_STAGE' }, resolveMissing);
     const draft = supportedDraftFor();
     state = caseSessionReducer(state, { type: 'SAVE_INITIAL_COMPARISON', draft }, resolveMissing);
-    const revealId = missingUmbrellaTag.neutralRecords.find((record) => record.visibility === 'reveal')!.id;
-    state = caseSessionReducer(state, { type: 'REVEAL_RECORDS', recordIds: [revealId] }, resolveMissing);
+    const revealIds = missingUmbrellaTag.neutralRecords.filter((record) => record.visibility === 'reveal').map((record) => record.id);
+    state = caseSessionReducer(state, { type: 'REVEAL_RECORDS', recordIds: [...revealIds] }, resolveMissing);
     state = caseSessionReducer(state, { type: 'SAVE_REVISED_COMPARISON', draft, revisionEvidenceSentenceIds: [missingUmbrellaTag.narrators[0].sentences[0]!.id] }, resolveMissing);
     expect(state.revisedComparison).toEqual(draft);
     state = caseSessionReducer(state, { type: 'ADVANCE_STAGE' }, resolveMissing);

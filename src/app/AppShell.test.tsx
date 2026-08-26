@@ -239,4 +239,36 @@ describe('AppShell', () => {
     expect(persisted).toMatchObject({ caseId: null, stage: 'intake', initialHypothesis: null });
     expect(sessionStorage.getItem(SAVED_MEMO_KEY)).toBe('저장해 둔 메모');
   });
+
+  it('recovers an incomplete persisted report with a backward review action', async () => {
+    const user = userEvent.setup();
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify({
+      ...createInitialSession(),
+      caseId: missingUmbrellaTag.id,
+      stage: 'report',
+    }));
+    render(<AppShell />);
+
+    expect(screen.getByRole('alert')).toHaveTextContent('이전 답변이 모두 확인되지 않아 보고서를 만들 수 없어요.');
+    await user.click(screen.getByRole('button', { name: '이전 비교 단계 다시 확인' }));
+    expect(screen.getByRole('heading', { name: '교차 조사' })).toBeInTheDocument();
+  });
+
+  it('keeps incomplete-report reset behind the same explicit confirmation', async () => {
+    const user = userEvent.setup();
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify({ ...createInitialSession(), caseId: missingUmbrellaTag.id, stage: 'report' }));
+    sessionStorage.setItem(SAVED_MEMO_KEY, '저장해 둔 메모');
+    render(<AppShell />);
+
+    const trigger = screen.getByRole('button', { name: '다른 사건 접수' });
+    await user.click(trigger);
+    expect(screen.getByRole('dialog', { name: '현재 기록을 지울까요?' })).toBeInTheDocument();
+    expect(sessionStorage.getItem(SESSION_KEY)).toContain('"stage":"report"');
+    await user.click(screen.getByRole('button', { name: '취소' }));
+    expect(trigger).toHaveFocus();
+    await user.click(trigger);
+    await user.click(screen.getByRole('button', { name: '현재 기록 지우고 새 사건 접수' }));
+    await waitFor(() => expect(screen.getByRole('heading', { name: '사건 접수' })).toBeInTheDocument());
+    expect(sessionStorage.getItem(SAVED_MEMO_KEY)).toBe('저장해 둔 메모');
+  });
 });

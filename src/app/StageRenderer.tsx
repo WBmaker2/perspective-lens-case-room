@@ -7,8 +7,9 @@ import { CrossExamination } from '../features/comparison/CrossExamination';
 import { MemoPad } from '../features/rewrite/MemoPad';
 import { PerspectiveRewrite } from '../features/rewrite/PerspectiveRewrite';
 import { CaseReport } from '../features/report/CaseReport';
-import { buildCaseReport } from '../domain/buildCaseReport';
+import { buildCaseReport, isIncompleteCaseReportError } from '../domain/buildCaseReport';
 import { stageLabel } from '../model/ui';
+import { ReportResetControl } from '../features/report/ReportResetControl';
 
 export interface StageRendererProps {
   casePacks: readonly CasePack[];
@@ -35,6 +36,30 @@ function Placeholder({ stage }: { stage: StageId }) {
       <p className="eyebrow">NEXT WORKSPACE</p>
       <h1 id={`${stage}-title`} data-stage-heading tabIndex={-1}>{stageLabel(stage)}</h1>
       <p className="lead">이 단계의 활동은 다음 화면에서 이어집니다.</p>
+    </section>
+  );
+}
+
+function IncompleteReportRecovery({ onRevisitStage, onReset }: Pick<StageRendererProps, 'onRevisitStage' | 'onReset'>) {
+  return (
+    <section className="stage-content case-report case-report--recovery" aria-labelledby="report-recovery-title">
+      <ReportResetControl onReset={onReset}>
+        {(resetTriggerRef, openResetDialog) => <>
+          <div className="stage-heading-block">
+            <p className="eyebrow">REPORT RECOVERY / 06</p>
+            <h1 id="report-recovery-title" data-stage-heading tabIndex={-1}>사건 보고서를 다시 확인해 주세요</h1>
+            <p className="lead" role="alert">이전 답변이 모두 확인되지 않아 보고서를 만들 수 없어요. 앞 단계로 돌아가 기록을 확인하거나 현재 기록을 지우고 새 사건을 접수하세요.</p>
+          </div>
+          <div className="case-report__recovery-actions">
+            <button className="case-report__sentence-button" type="button" onClick={() => onRevisitStage('comparison')}>
+              이전 비교 단계 다시 확인
+            </button>
+            <button className="case-report__reset-trigger" ref={resetTriggerRef} type="button" onClick={openResetDialog}>
+              다른 사건 접수
+            </button>
+          </div>
+        </>}
+      </ReportResetControl>
     </section>
   );
 }
@@ -101,14 +126,15 @@ export function StageRenderer({ casePacks, session, onSelectCase, onSelectHypoth
         </>
       ) : <Placeholder stage="rewrite" />;
     case 'report': {
-      if (!selectedPack) return <Placeholder stage="report" />;
+      if (!selectedPack) return <IncompleteReportRecovery onRevisitStage={onRevisitStage} onReset={onReset} />;
       let reportModel;
       try {
         reportModel = buildCaseReport(session, selectedPack);
-      } catch {
-        // A structurally valid but incomplete old session can still be loaded.
-        // Keep the learner in a safe workspace until the missing earlier answers are restored.
-        return <Placeholder stage="report" />;
+      } catch (error) {
+        if (isIncompleteCaseReportError(error)) {
+          return <IncompleteReportRecovery onRevisitStage={onRevisitStage} onReset={onReset} />;
+        }
+        throw error;
       }
       return <CaseReport model={reportModel} pack={selectedPack} onRevisitStage={onRevisitStage} onReset={onReset} />;
     }

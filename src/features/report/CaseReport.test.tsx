@@ -59,6 +59,14 @@ describe('CaseReport', () => {
 
     await user.click(screen.getAllByRole('button', { name: /근거 문장 1/ })[0]!);
     expect(onRevisitStage).toHaveBeenCalledWith('lenses');
+
+    await user.click(screen.getByRole('button', { name: /처음 비교.*가람.*문장 1/ }));
+    await user.click(screen.getByRole('button', { name: /수정한 비교.*가람.*문장 2/ }));
+    expect(onRevisitStage).toHaveBeenCalledWith('lenses');
+    expect(screen.getByText('다온은 이름표 없는 우산을 분실물 기록에 적고 안내 책상으로 옮겼다.')).toBeInTheDocument();
+    expect(screen.getByText('파란 표찰은 우산 걸이 아래로 떨어져 있었다.')).toBeInTheDocument();
+    expect(screen.getByText('보이는 정보를 살핀 관점')).toBeInTheDocument();
+    expect(screen.queryByText('mut-f-3')).not.toBeInTheDocument();
   });
 
   it('opens a cancellable reset dialog and only resets after explicit confirmation', async () => {
@@ -79,5 +87,30 @@ describe('CaseReport', () => {
     await user.click(trigger);
     await user.click(screen.getByRole('button', { name: '현재 기록 지우고 새 사건 접수' }));
     expect(onReset).toHaveBeenCalledTimes(1);
+  });
+
+  it('traps reset-dialog focus and makes the report background unavailable', async () => {
+    const user = userEvent.setup();
+    render(<CaseReport model={model} pack={missingUmbrellaTag} onRevisitStage={vi.fn()} onReset={vi.fn()} />);
+
+    const trigger = screen.getByRole('button', { name: '다른 사건 접수' });
+    await user.click(trigger);
+    const dialog = screen.getByRole('dialog', { name: '현재 기록을 지울까요?' });
+    expect(screen.getByRole('button', { name: '취소' })).toHaveFocus();
+    const background = document.querySelector('.case-report__background');
+    expect(background).toHaveAttribute('inert');
+    expect(background).toHaveAttribute('aria-hidden', 'true');
+
+    await user.tab();
+    expect(screen.getByRole('button', { name: '현재 기록 지우고 새 사건 접수' })).toHaveFocus();
+    await user.tab();
+    expect(screen.getByRole('button', { name: '취소' })).toHaveFocus();
+    await user.tab({ shift: true });
+    expect(screen.getByRole('button', { name: '현재 기록 지우고 새 사건 접수' })).toHaveFocus();
+    expect(dialog).toBeInTheDocument();
+
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
   });
 });

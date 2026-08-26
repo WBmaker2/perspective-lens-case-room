@@ -103,4 +103,16 @@ describe('buildCaseReport', () => {
 
     expect(() => buildCaseReport(incomplete, missingUmbrellaTag)).toThrow(/complete case session/i);
   });
+
+  it('requires the complete reveal-record set while accepting duplicate or reordered IDs', () => {
+    const complete = completeUmbrellaSession();
+    const revealIds = missingUmbrellaTag.neutralRecords
+      .filter((record) => record.visibility === 'reveal')
+      .map((record) => record.id);
+
+    expect(() => buildCaseReport({ ...complete, revealedRecordIds: [] }, missingUmbrellaTag)).toThrow(/revealed records/i);
+    expect(() => buildCaseReport({ ...complete, revealedRecordIds: [revealIds[0]!] }, missingUmbrellaTag)).toThrow(/revealed records/i);
+    expect(() => buildCaseReport({ ...complete, revealedRecordIds: [...revealIds, 'unknown'] }, missingUmbrellaTag)).toThrow(/revealed records/i);
+    expect(() => buildCaseReport({ ...complete, revealedRecordIds: [...revealIds].reverse().concat(revealIds[0]!) }, missingUmbrellaTag)).not.toThrow();
+  });
 });

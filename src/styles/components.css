@@ -107,6 +107,9 @@
 .memo-pad__status { margin: 0.65rem 0 0; color: var(--color-teal-dark); font-size: 0.78rem; line-height: 1.5; }
 
 .case-report { display: grid; gap: 1.5rem; }
+.case-report__background { display: grid; gap: 1.5rem; }
+.case-report--recovery .case-report__background { min-height: 16rem; align-content: center; }
+.case-report__recovery-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 0.65rem; }
 .case-report__section { min-width: 0; border-top: 2px solid var(--color-navy); padding-top: 1rem; }
 .case-report__section h2 { margin: 0; color: var(--color-navy); font-size: 1.15rem; }
 .case-report__intro { margin: 0.55rem 0 0; color: var(--color-muted); font-size: 0.84rem; line-height: 1.5; }
@@ -120,6 +123,7 @@
 .case-report__hypothesis { margin-top: 0.85rem; border-top: 0; background: #f3faf8; padding: 0.75rem; }
 .case-report__hypothesis span, .case-report__changed span, .case-report__reason > span, .case-report__fact-row > span { color: var(--color-orange-dark); font-size: 0.76rem; font-weight: 800; }
 .case-report__hypothesis p, .case-report__changed p, .case-report__fact-row p { margin: 0; color: var(--color-navy); font-size: 0.86rem; line-height: 1.5; }
+.case-report__facts, .case-report__tags { display: grid; gap: 0.35rem; margin: 0; padding-left: 1.15rem; color: var(--color-navy); font-size: 0.86rem; line-height: 1.5; }
 .case-report__snapshots { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.8rem; margin-top: 0.8rem; }
 .case-report__snapshot { min-width: 0; border: 1px solid var(--color-line); border-radius: var(--radius-sm); background: #fffdf8; padding: 0.75rem; }
 .case-report__snapshot > strong { color: var(--color-navy); font-size: 0.9rem; }
