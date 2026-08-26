@@ -6,10 +6,43 @@ import { playgroundStorageBox } from '../content/cases/playgroundStorageBox';
 import { clubNoticePoster } from '../content/cases/clubNoticePoster';
 import { createInitialSession } from '../domain/sessionReducer';
 import { SAVED_MEMO_KEY, SESSION_KEY } from '../domain/sessionPersistence';
-import type { StorageAdapter } from '../model/session';
+import type { CaseSession, StorageAdapter } from '../model/session';
 import { AppShell } from './AppShell';
 
 afterEach(cleanup);
+
+const completeReportSession = (): CaseSession => ({
+  ...createInitialSession(),
+  caseId: missingUmbrellaTag.id,
+  stage: 'report',
+  comparisonPhase: 'revised',
+  initialHypothesis: 'seen-information',
+  readNarratorIds: missingUmbrellaTag.narrators.map((narrator) => narrator.id),
+  evidenceSelections: Object.fromEntries(
+    missingUmbrellaTag.narrators.flatMap((narrator) => narrator.sentences).map((sentence) => [sentence.id, {
+      sentenceId: sentence.id,
+      categoryIds: [...sentence.acceptedCategorySets[0]!],
+      selectedSegmentIds: sentence.segments.map((segment) => segment.id),
+    }]),
+  ),
+  initialComparison: {
+    sharedFactOptionIds: ['mut-comparison-umbrella'],
+    differentExpressionOptionIds: ['mut-comparison-inference'],
+    missingInformationOptionIds: ['mut-comparison-owner-blind-spot'],
+    supportingSentenceIds: ['mut-a-1', 'mut-b-1', 'mut-a-4', 'mut-b-3'],
+  },
+  revealedRecordIds: ['mut-r-2', 'mut-r-3', 'mut-r-4'],
+  revisedComparison: {
+    sharedFactOptionIds: ['mut-comparison-moved'],
+    differentExpressionOptionIds: ['mut-comparison-inference'],
+    missingInformationOptionIds: ['mut-comparison-return-blind-spot'],
+    supportingSentenceIds: ['mut-a-2', 'mut-b-4', 'mut-a-4', 'mut-b-3', 'mut-b-2'],
+  },
+  revisionEvidenceSentenceIds: ['mut-a-4'],
+  rewriteDraft: {
+    targetNarratorId: 'umbrella-owner', audienceId: 'classmate', purposeId: 'report', blockIds: ['mut-block-moved-a', 'mut-block-tag-a'],
+  },
+});
 
 describe('AppShell', () => {
   beforeEach(() => sessionStorage.clear());
@@ -175,5 +208,35 @@ describe('AppShell', () => {
     expect(screen.getAllByRole('status').filter((status) => status.textContent?.includes('이 기기에 메모를 저장했어요.'))).toHaveLength(1);
     await user.click(screen.getByRole('button', { name: '관점 전환 완료' }));
     await waitFor(() => expect((JSON.parse(data.get(SESSION_KEY) ?? '{}') as { stage: string }).stage).toBe('report'));
+  });
+
+  it('revisits the report through the shell without losing stored answers', async () => {
+    const user = userEvent.setup();
+    const session = completeReportSession();
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
+    render(<AppShell />);
+
+    await user.click(screen.getAllByRole('button', { name: /근거 문장 1/ })[0]!);
+    await waitFor(() => expect(screen.getByRole('heading', { name: '렌즈 A/B' })).toBeInTheDocument());
+    const persisted = JSON.parse(sessionStorage.getItem(SESSION_KEY) ?? '{}') as CaseSession;
+    expect(persisted.stage).toBe('lenses');
+    expect(persisted.initialComparison).toEqual(session.initialComparison);
+    expect(persisted.revisedComparison).toEqual(session.revisedComparison);
+    expect(persisted.rewriteDraft).toEqual(session.rewriteDraft);
+  });
+
+  it('confirms report reset while preserving an explicitly saved memo', async () => {
+    const user = userEvent.setup();
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(completeReportSession()));
+    sessionStorage.setItem(SAVED_MEMO_KEY, '저장해 둔 메모');
+    render(<AppShell />);
+
+    await user.click(screen.getByRole('button', { name: '다른 사건 접수' }));
+    expect(JSON.parse(sessionStorage.getItem(SESSION_KEY) ?? '{}').stage).toBe('report');
+    await user.click(screen.getByRole('button', { name: '현재 기록 지우고 새 사건 접수' }));
+    await waitFor(() => expect(screen.getByRole('heading', { name: '사건 접수' })).toBeInTheDocument());
+    const persisted = JSON.parse(sessionStorage.getItem(SESSION_KEY) ?? '{}') as CaseSession;
+    expect(persisted).toMatchObject({ caseId: null, stage: 'intake', initialHypothesis: null });
+    expect(sessionStorage.getItem(SAVED_MEMO_KEY)).toBe('저장해 둔 메모');
   });
 });

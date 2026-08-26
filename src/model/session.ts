@@ -50,6 +50,7 @@ export type CaseAction =
   | { type: 'SAVE_REVISED_COMPARISON'; draft: ComparisonDraft; revisionEvidenceSentenceIds: readonly string[] }
   | { type: 'SET_REWRITE_DRAFT'; draft: RewriteDraft }
   | { type: 'ADVANCE_STAGE' }
+  | { type: 'REVISIT_STAGE'; stage: Exclude<StageId, 'intake'> }
   | { type: 'RESET_CASE' };
 
 export interface StorageAdapter {

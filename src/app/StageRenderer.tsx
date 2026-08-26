@@ -6,6 +6,8 @@ import { EvidenceBoard } from '../features/evidence/EvidenceBoard';
 import { CrossExamination } from '../features/comparison/CrossExamination';
 import { MemoPad } from '../features/rewrite/MemoPad';
 import { PerspectiveRewrite } from '../features/rewrite/PerspectiveRewrite';
+import { CaseReport } from '../features/report/CaseReport';
+import { buildCaseReport } from '../domain/buildCaseReport';
 import { stageLabel } from '../model/ui';
 
 export interface StageRendererProps {
@@ -20,6 +22,8 @@ export interface StageRendererProps {
   onRevealRecords: (recordIds: readonly string[]) => void;
   onSaveRevisedComparison: (draft: ComparisonDraft, reasonSentenceIds: readonly string[]) => void;
   onSaveRewrite: (draft: RewriteDraft) => void;
+  onRevisitStage: (stage: Exclude<StageId, 'intake'>) => void;
+  onReset: () => void;
   storage: StorageAdapter;
   onPersistenceMessage: (message: string) => void;
   onContinue: () => void;
@@ -35,7 +39,7 @@ function Placeholder({ stage }: { stage: StageId }) {
   );
 }
 
-export function StageRenderer({ casePacks, session, onSelectCase, onSelectHypothesis, onMarkRead, onToggleImportantSentence, onRecordEvidence, onSaveInitialComparison, onRevealRecords, onSaveRevisedComparison, onSaveRewrite, storage, onPersistenceMessage, onContinue }: StageRendererProps) {
+export function StageRenderer({ casePacks, session, onSelectCase, onSelectHypothesis, onMarkRead, onToggleImportantSentence, onRecordEvidence, onSaveInitialComparison, onRevealRecords, onSaveRevisedComparison, onSaveRewrite, onRevisitStage, onReset, storage, onPersistenceMessage, onContinue }: StageRendererProps) {
   const selectedPack = session.caseId ? casePacks.find((pack) => pack.id === session.caseId) ?? null : null;
 
   switch (session.stage) {
@@ -96,8 +100,18 @@ export function StageRenderer({ casePacks, session, onSelectCase, onSelectHypoth
           <MemoPad caseId={selectedPack.id} storage={storage} onPersistenceMessage={onPersistenceMessage} />
         </>
       ) : <Placeholder stage="rewrite" />;
-    case 'report':
-      return <Placeholder stage="report" />;
+    case 'report': {
+      if (!selectedPack) return <Placeholder stage="report" />;
+      let reportModel;
+      try {
+        reportModel = buildCaseReport(session, selectedPack);
+      } catch {
+        // A structurally valid but incomplete old session can still be loaded.
+        // Keep the learner in a safe workspace until the missing earlier answers are restored.
+        return <Placeholder stage="report" />;
+      }
+      return <CaseReport model={reportModel} pack={selectedPack} onRevisitStage={onRevisitStage} onReset={onReset} />;
+    }
   }
 
   return <p role="alert">알 수 없는 학습 단계입니다.</p>;

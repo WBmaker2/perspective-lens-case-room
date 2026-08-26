@@ -115,6 +115,12 @@ export function caseSessionReducer(session: CaseSession, action: CaseAction, res
       return { ...session, revisedComparison: cloneComparison(action.draft), revisionEvidenceSentenceIds: evidenceIds, comparisonPhase: 'revised' };
     }
     case 'SET_REWRITE_DRAFT': return { ...session, rewriteDraft: cloneRewrite(action.draft) };
+    case 'REVISIT_STAGE': {
+      const currentIndex = STAGES.indexOf(session.stage);
+      const targetIndex = STAGES.indexOf(action.stage);
+      if (targetIndex < 1 || targetIndex >= currentIndex) return session;
+      return { ...session, stage: action.stage };
+    }
     case 'ADVANCE_STAGE': {
       if (!session.caseId) return session;
       const pack = resolveCasePack(session.caseId);

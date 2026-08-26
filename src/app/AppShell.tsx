@@ -2,7 +2,7 @@ import { casePacks } from '../content/caseIndex';
 import { safetyCopy } from '../content/safetyCopy';
 import { getStageGate } from '../domain/sessionReducer';
 import type { CaseId, InitialHypothesis } from '../model/case';
-import type { CaseAction, ComparisonDraft, EvidenceSelection, RewriteDraft, StorageAdapter } from '../model/session';
+import type { CaseAction, ComparisonDraft, EvidenceSelection, RewriteDraft, StageId, StorageAdapter } from '../model/session';
 import type { AppViewModel } from '../model/ui';
 import { ProgressSteps } from '../components/ProgressSteps';
 import { StageRenderer } from './StageRenderer';
@@ -37,6 +37,8 @@ export function AppShell({ storage }: AppShellProps = {}) {
     type: 'SAVE_REVISED_COMPARISON', draft, revisionEvidenceSentenceIds: reasonSentenceIds,
   });
   const saveRewrite = (draft: RewriteDraft) => send({ type: 'SET_REWRITE_DRAFT', draft });
+  const revisitStage = (stage: Exclude<StageId, 'intake'>) => send({ type: 'REVISIT_STAGE', stage });
+  const resetCase = () => send({ type: 'RESET_CASE' });
 
   return (
     <main className="app-shell">
@@ -69,6 +71,8 @@ export function AppShell({ storage }: AppShellProps = {}) {
         onRevealRecords={revealRecords}
         onSaveRevisedComparison={saveRevisedComparison}
         onSaveRewrite={saveRewrite}
+        onRevisitStage={revisitStage}
+        onReset={resetCase}
         storage={sessionStorage}
         onPersistenceMessage={ignoreMemoPersistenceMessage}
         onContinue={continueStage}

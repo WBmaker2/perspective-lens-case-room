@@ -142,4 +142,37 @@ describe('caseSessionReducer', () => {
     state = caseSessionReducer(state, { type: 'ADVANCE_STAGE' }, resolveMissing);
     expect(state.stage).toBe('report');
   });
+
+  it('revisits only earlier stages while preserving every answer and no-oping same or forward requests', () => {
+    const initialComparison = supportedDraftFor();
+    const revisedComparison = { ...initialComparison, sharedFactOptionIds: [...initialComparison.sharedFactOptionIds] };
+    const rewriteDraft = {
+      targetNarratorId: pack.rewriteRules[0]!.targetNarratorId,
+      audienceId: pack.rewriteRules[0]!.audienceId,
+      purposeId: pack.rewriteRules[0]!.purposeId,
+      blockIds: [...pack.rewriteRules[0]!.acceptedExampleBlockSets[0]!],
+    };
+    const report: CaseSession = {
+      ...createInitialSession(),
+      caseId: pack.id,
+      stage: 'report',
+      comparisonPhase: 'revised',
+      initialHypothesis: 'seen-information',
+      markedSentenceIds: ['box-sentence-1'],
+      initialComparison,
+      revisedComparison,
+      revisionEvidenceSentenceIds: ['box-sentence-1'],
+      rewriteDraft,
+    };
+
+    const revisited = caseSessionReducer(report, { type: 'REVISIT_STAGE', stage: 'lenses' }, resolve);
+    expect(revisited.stage).toBe('lenses');
+    expect(revisited.initialHypothesis).toBe(report.initialHypothesis);
+    expect(revisited.initialComparison).toBe(initialComparison);
+    expect(revisited.revisedComparison).toBe(revisedComparison);
+    expect(revisited.rewriteDraft).toBe(rewriteDraft);
+    expect(revisited.markedSentenceIds).toBe(report.markedSentenceIds);
+    expect(caseSessionReducer(revisited, { type: 'REVISIT_STAGE', stage: 'lenses' }, resolve)).toBe(revisited);
+    expect(caseSessionReducer(revisited, { type: 'REVISIT_STAGE', stage: 'comparison' }, resolve)).toBe(revisited);
+  });
 });

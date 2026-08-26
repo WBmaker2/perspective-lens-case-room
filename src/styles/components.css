@@ -106,6 +106,49 @@
 .memo-pad__actions button:hover { background: #e5f3f0; }
 .memo-pad__status { margin: 0.65rem 0 0; color: var(--color-teal-dark); font-size: 0.78rem; line-height: 1.5; }
 
+.case-report { display: grid; gap: 1.5rem; }
+.case-report__section { min-width: 0; border-top: 2px solid var(--color-navy); padding-top: 1rem; }
+.case-report__section h2 { margin: 0; color: var(--color-navy); font-size: 1.15rem; }
+.case-report__intro { margin: 0.55rem 0 0; color: var(--color-muted); font-size: 0.84rem; line-height: 1.5; }
+.case-report__evidence-list { display: grid; gap: 0.5rem; margin: 0.9rem 0 0; padding: 0; list-style: none; }
+.case-report__evidence-row { display: flex; min-width: 0; align-items: center; justify-content: space-between; gap: 0.75rem; border-bottom: 1px solid var(--color-soft); padding: 0.3rem 0 0.5rem; }
+.case-report__sentence-button, .case-report__reset-trigger, .case-report__dialog button { display: inline-flex; min-width: 44px; min-height: 44px; align-items: center; border: 1px solid var(--color-teal-dark); border-radius: 999px; background: transparent; padding: 0.5rem 0.75rem; color: var(--color-teal-dark); font-size: 0.78rem; font-weight: 800; line-height: 1.35; text-align: left; cursor: pointer; }
+.case-report__sentence-button:hover, .case-report__reset-trigger:hover, .case-report__dialog button:hover { background: #e5f3f0; }
+.case-report__evidence-status { flex: 0 0 auto; color: var(--color-muted); font-size: 0.76rem; }
+.case-report__evidence-status--supported { color: var(--color-teal-dark); }
+.case-report__hypothesis, .case-report__changed, .case-report__reason, .case-report__fact-row { display: grid; grid-template-columns: minmax(8rem, 0.35fr) minmax(0, 1fr); gap: 0.75rem; border-top: 1px solid var(--color-soft); padding: 0.7rem 0; }
+.case-report__hypothesis { margin-top: 0.85rem; border-top: 0; background: #f3faf8; padding: 0.75rem; }
+.case-report__hypothesis span, .case-report__changed span, .case-report__reason > span, .case-report__fact-row > span { color: var(--color-orange-dark); font-size: 0.76rem; font-weight: 800; }
+.case-report__hypothesis p, .case-report__changed p, .case-report__fact-row p { margin: 0; color: var(--color-navy); font-size: 0.86rem; line-height: 1.5; }
+.case-report__snapshots { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.8rem; margin-top: 0.8rem; }
+.case-report__snapshot { min-width: 0; border: 1px solid var(--color-line); border-radius: var(--radius-sm); background: #fffdf8; padding: 0.75rem; }
+.case-report__snapshot > strong { color: var(--color-navy); font-size: 0.9rem; }
+.case-report__snapshot-group { margin-top: 0.65rem; }
+.case-report__snapshot-group > span { color: var(--color-teal-dark); font-size: 0.76rem; font-weight: 800; }
+.case-report__snapshot-group ul { margin: 0.25rem 0 0; padding-left: 1.15rem; color: var(--color-navy); font-size: 0.8rem; line-height: 1.5; }
+.case-report__snapshot-group p { margin: 0.25rem 0 0; }
+.case-report__reason-list { display: flex; min-width: 0; flex-wrap: wrap; gap: 0.45rem; }
+.case-report__questions { display: grid; gap: 0.55rem; margin: 0.85rem 0 0; padding-left: 1.2rem; color: var(--color-navy); font-size: 0.88rem; line-height: 1.55; }
+.case-report__empty { margin: 0.85rem 0 0; color: var(--color-muted); font-size: 0.86rem; line-height: 1.5; }
+.case-report__actions { display: flex; justify-content: flex-end; }
+.case-report__reset-trigger { border-color: var(--color-line); color: var(--color-navy); }
+.case-report__dialog-backdrop { position: fixed; z-index: 10; inset: 0; display: grid; place-items: center; background: rgba(35, 48, 68, 0.34); padding: 1rem; }
+.case-report__dialog { width: min(100%, 30rem); border: 1px solid var(--color-line); border-radius: var(--radius-md); background: var(--color-paper); padding: 1.25rem; box-shadow: 0 1rem 3rem rgba(35, 48, 68, 0.2); }
+.case-report__dialog h2 { margin: 0; color: var(--color-navy); font-size: 1.2rem; }
+.case-report__dialog p { margin: 0.65rem 0 0; color: var(--color-muted); font-size: 0.86rem; line-height: 1.55; }
+.case-report__dialog-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 0.55rem; margin-top: 1rem; }
+.case-report__dialog-actions button:last-child { border-color: var(--color-orange-dark); color: var(--color-orange-dark); }
+
+@media (max-width: 600px) {
+  .case-report__evidence-row { align-items: flex-start; flex-direction: column; }
+  .case-report__snapshots { grid-template-columns: 1fr; }
+  .case-report__hypothesis, .case-report__changed, .case-report__reason, .case-report__fact-row { grid-template-columns: 1fr; gap: 0.25rem; }
+  .case-report__actions { justify-content: stretch; }
+  .case-report__reset-trigger { width: 100%; justify-content: center; }
+  .case-report__dialog-actions { align-items: stretch; flex-direction: column-reverse; }
+  .case-report__dialog-actions button { width: 100%; justify-content: center; }
+}
+
 @media (max-width: 760px) {
   .comparison-workspace, .rewrite-choices, .rewrite-block-workspace { grid-template-columns: 1fr; }
   .supporting-sentence-list { grid-template-columns: 1fr; }
