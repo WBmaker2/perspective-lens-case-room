@@ -85,14 +85,14 @@ export function EvidenceBoard({ pack, selections, onRecord, onContinue }: Eviden
   const [activeSentenceId, setActiveSentenceId] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<Readonly<Record<string, Draft>>>({});
   const [localSelections, setLocalSelections] = useState<Readonly<Record<string, EvidenceSelection>>>({});
-  const [feedbackBySentence, setFeedbackBySentence] = useState<Readonly<Record<string, EvidenceFeedback>>>({});
-  const [latestFeedbackId, setLatestFeedbackId] = useState<string | null>(null);
+  const submissionRevision = useRef(0);
+  const [latestFeedback, setLatestFeedback] = useState<{ sentenceId: string; revision: number } | null>(null);
   const feedbackRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    if (!latestFeedbackId) return;
+    if (!latestFeedback) return;
     feedbackRef.current?.focus();
-  }, [latestFeedbackId]);
+  }, [latestFeedback]);
 
   const effectiveSelections: Readonly<Record<string, EvidenceSelection>> = { ...selections, ...localSelections };
   const effectiveFirstUnclassified = sentences.find((sentence) => !selectionIsSupported(sentence, effectiveSelections[sentence.id]));
@@ -150,8 +150,8 @@ export function EvidenceBoard({ pack, selections, onRecord, onContinue }: Eviden
     };
     const result = evaluateEvidenceSelection(activeSentence, selection);
     setLocalSelections((current) => ({ ...current, [selection.sentenceId]: selection }));
-    setFeedbackBySentence((current) => ({ ...current, [selection.sentenceId]: result }));
-    setLatestFeedbackId(selection.sentenceId);
+    submissionRevision.current += 1;
+    setLatestFeedback({ sentenceId: selection.sentenceId, revision: submissionRevision.current });
     onRecord(selection);
     if (result.status === 'supported') {
       const next = sentences.find((sentence) => sentence.id !== selection.sentenceId && !selectionIsSupported(sentence, effectiveSelections[sentence.id]));
@@ -184,16 +184,18 @@ export function EvidenceBoard({ pack, selections, onRecord, onContinue }: Eviden
       </div>
       <ol className="evidence-list" aria-label="분류할 근거 문장">
         {sentences.map((sentence) => {
-          const savedFeedback = feedbackBySentence[sentence.id];
           const pressed = sentence.id === activeSentence?.id;
           const saved = effectiveSelections[sentence.id];
+          const savedFeedback: EvidenceFeedback | null = saved
+            ? evaluateEvidenceSelection(sentence, saved)
+            : null;
+          const isLatestFeedback = latestFeedback?.sentenceId === sentence.id;
           return (
             <li className={`evidence-list__item${pressed ? ' is-active' : ''}`} key={sentence.id}>
               <SentenceCard sentence={sentence} mode="classify-evidence" pressed={pressed} onToggle={selectSentence}>
                 {cardDetails(sentence)}
               </SentenceCard>
-              {savedFeedback ? <FeedbackPanel ref={savedFeedback.sentenceId === latestFeedbackId ? feedbackRef : undefined} feedback={savedFeedback} live={savedFeedback.sentenceId === latestFeedbackId} /> : null}
-              {saved && !savedFeedback ? <p className="saved-indicator">분류가 저장되었습니다.</p> : null}
+              {savedFeedback ? <FeedbackPanel ref={isLatestFeedback ? feedbackRef : undefined} feedback={savedFeedback} live={isLatestFeedback} /> : null}
             </li>
           );
         })}

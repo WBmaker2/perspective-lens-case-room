@@ -1,8 +1,13 @@
-import { render, screen } from '@testing-library/react';
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { playgroundStorageBox } from '../content/cases/playgroundStorageBox';
+import { createInitialSession } from '../domain/sessionReducer';
+import { SESSION_KEY } from '../domain/sessionPersistence';
 import type { StorageAdapter } from '../model/session';
 import { AppShell } from './AppShell';
+
+afterEach(cleanup);
 
 describe('AppShell', () => {
   beforeEach(() => sessionStorage.clear());
@@ -43,5 +48,32 @@ describe('AppShell', () => {
     expect(screen.getByText('진행 상황을 이 기기에 저장하지 못했습니다. 활동은 계속할 수 있습니다.', { exact: true })).toBeInTheDocument();
     await user.click(screen.getByRole('radio', { name: /보이는 정보/ }));
     expect(screen.getByRole('button', { name: '사건 렌즈 열기' })).toBeEnabled();
+  });
+
+  it('records evidence through the AppShell reducer and persists the normalized selection', async () => {
+    const user = userEvent.setup();
+    const sentence = playgroundStorageBox.narrators[0].sentences[0]!;
+    const evidenceSession = {
+      ...createInitialSession(),
+      caseId: playgroundStorageBox.id,
+      stage: 'evidence' as const,
+    };
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(evidenceSession));
+    render(<AppShell />);
+
+    const card = document.querySelector<HTMLElement>(`[data-sentence-id="${sentence.id}"]`);
+    expect(card).not.toBeNull();
+    await user.click(within(card!).getByRole('button', { name: /문장 1/ }));
+    await user.click(screen.getByRole('button', { name: '관찰 사실' }));
+    await user.click(screen.getByRole('button', { name: '근거 표시하기' }));
+
+    await waitFor(() => {
+      const persisted = JSON.parse(sessionStorage.getItem(SESSION_KEY) ?? '{}') as typeof evidenceSession;
+      expect(persisted.evidenceSelections[sentence.id]).toEqual({
+        sentenceId: sentence.id,
+        categoryIds: ['observation'],
+        selectedSegmentIds: sentence.segments.map((segment) => segment.id),
+      });
+    });
   });
 });
