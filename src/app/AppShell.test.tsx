@@ -305,6 +305,29 @@ describe('AppShell', () => {
     expect(settings).toHaveFocus();
   });
 
+  it('keeps the reset dialog exclusive from fixed utility dialogs', async () => {
+    const user = userEvent.setup();
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(completeReportSession()));
+    render(<AppShell />);
+
+    const resetTrigger = screen.getByRole('button', { name: '다른 사건 접수' });
+    await user.click(resetTrigger);
+    expect(screen.getAllByRole('dialog')).toHaveLength(1);
+    expect(screen.getByRole('dialog', { name: '현재 기록을 지울까요?' })).toBeInTheDocument();
+    expect(document.querySelector('.app-shell')).toHaveAttribute('inert');
+
+    const updates = document.querySelector<HTMLButtonElement>('.utility-button[aria-controls="update-history-dialog"]');
+    expect(updates).not.toBeNull();
+    await user.click(updates!);
+    expect(screen.getAllByRole('dialog')).toHaveLength(1);
+    expect(screen.queryByRole('dialog', { name: '업데이트 내역' })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: '취소' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(resetTrigger).toHaveFocus();
+    expect(document.querySelector('.app-shell')).not.toHaveAttribute('inert');
+  });
+
   it('uses separate injected session and persistent adapters', async () => {
     const user = userEvent.setup();
     const sessionData = new Map<string, string>();

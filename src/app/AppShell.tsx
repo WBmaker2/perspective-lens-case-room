@@ -8,6 +8,7 @@ import type { CaseAction, ComparisonDraft, EvidenceSelection, RewriteDraft, Stag
 import type { AppViewModel } from '../model/ui';
 import type { ReadingPreferences } from '../model/ui';
 import { ModalDialog } from '../components/ModalDialog';
+import { hasModalLock } from '../components/modalCoordinator';
 import { ReadingSettings } from '../features/settings/ReadingSettings';
 import { UpdateHistoryDialog } from '../features/updates/UpdateHistoryDialog';
 import { ProgressSteps } from '../components/ProgressSteps';
@@ -78,6 +79,10 @@ export function AppShell({ storage, persistentStorage, localStorage: injectedLoc
   const revisitStage = (stage: Exclude<StageId, 'intake'>) => send({ type: 'REVISIT_STAGE', stage });
   const resetCase = () => send({ type: 'RESET_CASE' });
   const closeUtility = useCallback(() => setOpenUtility(null), []);
+  const openUtilityDialog = (utility: 'reading' | 'updates') => {
+    if (hasModalLock()) return;
+    setOpenUtility(utility);
+  };
   const changeReadingPreferences = useCallback((preferences: ReadingPreferences) => {
     setReadingPreferences(preferences);
     const result = saveReadingPreferences(persistentAdapter, preferences);
@@ -134,7 +139,7 @@ export function AppShell({ storage, persistentStorage, localStorage: injectedLoc
           aria-haspopup="dialog"
           aria-expanded={openUtility === 'reading'}
           aria-controls="reading-settings-dialog"
-          onClick={() => setOpenUtility('reading')}
+          onClick={() => openUtilityDialog('reading')}
         >읽기 설정</button>
         <button
           ref={updatesTriggerRef}
@@ -143,7 +148,7 @@ export function AppShell({ storage, persistentStorage, localStorage: injectedLoc
           aria-haspopup="dialog"
           aria-expanded={openUtility === 'updates'}
           aria-controls="update-history-dialog"
-          onClick={() => setOpenUtility('updates')}
+          onClick={() => openUtilityDialog('updates')}
         >업데이트 내역</button>
       </div>
       {readingWarning ? <p className="utility-warning" role="status">{readingWarning}</p> : null}

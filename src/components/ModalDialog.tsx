@@ -1,5 +1,6 @@
-import { useEffect, useRef, type ReactNode, type RefObject } from 'react';
+import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
+import { acquireModalLock, isActiveModal, releaseModalLock, useActiveModal, type ModalLockToken } from './modalCoordinator';
 
 export interface ModalDialogProps {
   id: string;
@@ -8,6 +9,7 @@ export interface ModalDialogProps {
   triggerRef: RefObject<HTMLButtonElement | null>;
   children: ReactNode;
   onClose: () => void;
+  showCloseButton?: boolean;
 }
 
 const focusableSelector = [
@@ -19,41 +21,21 @@ const focusableSelector = [
   '[tabindex]:not([tabindex="-1"])',
 ].join(',');
 
-export function ModalDialog({ id, title, open, triggerRef, children, onClose }: ModalDialogProps) {
+export function ModalDialog({ id, title, open, triggerRef, children, onClose, showCloseButton = true }: ModalDialogProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
-  const lockedBackgroundsRef = useRef<Array<{ element: HTMLElement; inert: boolean; hidden: string | null }>>([]);
+  const [token] = useState<ModalLockToken>(() => Symbol('modal-lock'));
+  const wasOpenRef = useRef(open);
+  const active = useActiveModal(token);
 
   useEffect(() => {
-    const backgrounds = Array.from(document.querySelectorAll<HTMLElement>('.app-shell')).length > 0
-      ? Array.from(document.querySelectorAll<HTMLElement>('.app-shell'))
-      : Array.from(document.body.children)
-        .filter((element) => !element.classList.contains('modal-dialog-backdrop'))
-        .filter((element): element is HTMLElement => element instanceof HTMLElement);
-    const unlockBackground = () => {
-      for (const { element, inert, hidden } of lockedBackgroundsRef.current) {
-        if (inert) element.setAttribute('inert', '');
-        else element.removeAttribute('inert');
-        if (hidden === null) element.removeAttribute('aria-hidden');
-        else element.setAttribute('aria-hidden', hidden);
-      }
-      lockedBackgroundsRef.current = [];
-    };
-
     if (!open) {
-      unlockBackground();
-      triggerRef.current?.focus();
+      if (wasOpenRef.current) triggerRef.current?.focus();
+      wasOpenRef.current = false;
       return undefined;
     }
 
-    lockedBackgroundsRef.current = backgrounds.map((element) => ({
-      element,
-      inert: element.hasAttribute('inert'),
-      hidden: element.getAttribute('aria-hidden'),
-    }));
-    for (const element of backgrounds) {
-      element.setAttribute('inert', '');
-      element.setAttribute('aria-hidden', 'true');
-    }
+    wasOpenRef.current = true;
+    acquireModalLock(token);
 
     const dialog = dialogRef.current;
     const getFocusable = (): HTMLElement[] => dialog
@@ -63,11 +45,12 @@ export function ModalDialog({ id, title, open, triggerRef, children, onClose }: 
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
+        if (!isActiveModal(token)) return;
         event.preventDefault();
         onClose();
         return;
       }
-      if (event.key !== 'Tab') return;
+      if (event.key !== 'Tab' || !isActiveModal(token)) return;
       const focusable = getFocusable();
       if (focusable.length === 0) {
         event.preventDefault();
@@ -88,9 +71,9 @@ export function ModalDialog({ id, title, open, triggerRef, children, onClose }: 
     document.addEventListener('keydown', handleKeyDown);
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
-      unlockBackground();
+      releaseModalLock(token);
     };
-  }, [open, onClose, triggerRef]);
+  }, [open, onClose, triggerRef, token]);
 
   if (!open || typeof document === 'undefined') return null;
   return createPortal(
@@ -100,13 +83,14 @@ export function ModalDialog({ id, title, open, triggerRef, children, onClose }: 
         className="modal-dialog"
         id={id}
         role="dialog"
-        aria-modal="true"
+        aria-modal={active ? 'true' : undefined}
+        inert={!active ? true : undefined}
         aria-labelledby={`${id}-title`}
         tabIndex={-1}
       >
         <div className="modal-dialog__heading">
           <h2 id={`${id}-title`}>{title}</h2>
-          <button className="modal-dialog__close" type="button" onClick={onClose}>닫기</button>
+          {showCloseButton ? <button className="modal-dialog__close" type="button" onClick={onClose}>닫기</button> : null}
         </div>
         <div className="modal-dialog__body">{children}</div>
       </div>

@@ -1,5 +1,6 @@
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useEffect, useRef } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ModalDialog } from './ModalDialog';
 
@@ -50,5 +51,65 @@ describe('ModalDialog', () => {
     render(<ModalDialog id="history-dialog" title="업데이트 내역" open triggerRef={triggerRef} onClose={onClose}><p>내용</p></ModalDialog>);
     await user.click(screen.getByRole('button', { name: '닫기' }));
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not move focus to a trigger on the initial closed mount', () => {
+    const trigger = document.createElement('button');
+    trigger.type = 'button';
+    trigger.textContent = '열기';
+    document.body.append(trigger);
+    const triggerRef = { current: trigger };
+    function StageHeading() {
+      const headingRef = useRef<HTMLHeadingElement>(null);
+      useEffect(() => headingRef.current?.focus(), []);
+      return <h1 ref={headingRef} data-stage-heading tabIndex={-1}>사건 접수</h1>;
+    }
+    render(
+      <main className="app-shell">
+        <StageHeading />
+        <ModalDialog id="closed-dialog" title="닫힌 대화상자" open={false} triggerRef={triggerRef} onClose={vi.fn()}>
+          <button type="button">첫 번째</button>
+        </ModalDialog>
+      </main>,
+    );
+
+    expect(screen.getByRole('heading', { name: '사건 접수' })).toHaveFocus();
+  });
+
+  it('keeps the background locked until the last open instance closes', () => {
+    const firstTriggerRef = { current: null };
+    const secondTriggerRef = { current: null };
+    const shell = document.createElement('main');
+    shell.className = 'app-shell';
+    shell.setAttribute('inert', '');
+    shell.setAttribute('aria-hidden', 'false');
+    document.body.append(shell);
+    const view = render(
+      <>
+        <ModalDialog id="first-dialog" title="첫 대화상자" open triggerRef={firstTriggerRef} onClose={vi.fn()}>
+          <button type="button">첫 번째 확인</button>
+        </ModalDialog>
+        <ModalDialog id="second-dialog" title="둘째 대화상자" open triggerRef={secondTriggerRef} onClose={vi.fn()}>
+          <button type="button">둘째 확인</button>
+        </ModalDialog>
+      </>,
+    );
+
+    expect(screen.getAllByRole('dialog')).toHaveLength(2);
+    expect(document.querySelectorAll('[role="dialog"][aria-modal="true"]')).toHaveLength(1);
+    expect(shell).toHaveAttribute('inert');
+    expect(shell).toHaveAttribute('aria-hidden', 'true');
+
+    view.rerender(
+      <ModalDialog id="second-dialog" title="둘째 대화상자" open triggerRef={secondTriggerRef} onClose={vi.fn()}>
+        <button type="button">둘째 확인</button>
+      </ModalDialog>,
+    );
+    expect(shell).toHaveAttribute('inert');
+    expect(shell).toHaveAttribute('aria-hidden', 'true');
+
+    view.rerender(<></>);
+    expect(shell).toHaveAttribute('inert');
+    expect(shell).toHaveAttribute('aria-hidden', 'false');
   });
 });
