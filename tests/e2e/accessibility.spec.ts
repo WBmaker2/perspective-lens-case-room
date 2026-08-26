@@ -70,12 +70,15 @@ async function reach(page: Page) {
   await page.reload();
   await key(page.getByRole('button', { name: `${pack.title} 사건 선택` }));
   await key(page.getByRole('radio', { name: /보이는 정보/ }), 'Space');
-  await key(page.getByRole('button', { name: '사건 렌즈 열기', exact: true }));
+  await page.locator('[data-stage-heading]').focus();
 }
 
 test('axe, semantics, tabs, announcements, and dialogs cover the full learner path', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 });
   await reach(page);
+  await assertStage(page, '사건 접수');
+  await noSeriousAxe(page);
+  await key(page.getByRole('button', { name: '사건 렌즈 열기', exact: true }));
   await assertStage(page, '렌즈 A/B');
   await noSeriousAxe(page);
 
@@ -161,4 +164,16 @@ test('axe, semantics, tabs, announcements, and dialogs cover the full learner pa
     await expect(dialog).toHaveCount(0);
     await expect(trigger).toBeFocused();
   }
+
+  const resetTrigger = page.getByRole('button', { name: '다른 사건 접수', exact: true });
+  await key(resetTrigger);
+  const resetDialog = page.getByRole('dialog', { name: '현재 기록을 지울까요?' });
+  await expect(resetDialog).toBeVisible();
+  await noSeriousAxe(page);
+  await page.keyboard.press('Tab');
+  await page.keyboard.press('Shift+Tab');
+  await page.keyboard.press('Escape');
+  await expect(resetDialog).toHaveCount(0);
+  await expect.poll(() => page.locator('.case-report__background').getAttribute('inert')).toBeNull();
+  await expect(resetTrigger).toBeFocused();
 });

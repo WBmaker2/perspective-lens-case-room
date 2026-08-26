@@ -47,7 +47,7 @@ async function startEvidence(page: Page) {
   await press(page.getByRole('button', { name: '근거 보드로 이동', exact: true }));
 }
 
-async function classify(page: Page, index: number) {
+async function selectClassification(page: Page, index: number) {
   const sentence = pack.narrators.flatMap((narrator) => narrator.sentences)[index]!;
   await press(page.getByRole('button', { name: /^문장 \d+/ }).nth(index));
   for (const category of [...new Set(sentence.acceptedCategorySets[0] ?? [])]) await press(page.getByRole('button', { name: categoryLabels[category], exact: true }));
@@ -55,12 +55,16 @@ async function classify(page: Page, index: number) {
     const segments = page.getByRole('checkbox');
     for (let segmentIndex = 0; segmentIndex < sentence.segments.length; segmentIndex += 1) await press(segments.nth(segmentIndex), 'Space');
   }
+}
+
+async function submitClassification(page: Page, index: number) {
+  await selectClassification(page, index);
   await press(page.getByRole('button', { name: '근거 표시하기', exact: true }));
 }
 
 async function completeAllEvidence(page: Page, startIndex: number) {
   const sentences = pack.narrators.flatMap((narrator) => narrator.sentences);
-  for (let index = startIndex; index < sentences.length; index += 1) await classify(page, index);
+  for (let index = startIndex; index < sentences.length; index += 1) await submitClassification(page, index);
   await press(page.getByRole('button', { name: '교차 조사 시작', exact: true }));
 }
 
@@ -114,7 +118,7 @@ test('captures the three learner stages and reduced-motion current action', asyn
   await press(tabs.nth(0));
   await press(page.getByRole('button', { name: '중요 문장 표시', exact: true }).nth(0));
   await press(page.getByRole('button', { name: '근거 보드로 이동', exact: true }));
-  await classify(page, 0);
+  await submitClassification(page, 0);
   await captureEvidence(page, '근거 보드', 'docs/qa/evidence/375-evidence.png');
   await completeAllEvidence(page, 1);
   await completeComparisonAndRewrite(page);
@@ -123,10 +127,13 @@ test('captures the three learner stages and reduced-motion current action', asyn
 
   await startEvidence(page);
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  await classify(page, 0);
+  await selectClassification(page, 0);
   const action = page.getByRole('button', { name: '근거 표시하기', exact: true });
+  await expect(action).toBeEnabled();
+  await expect(action).toHaveClass(/gi-pulse/);
+  await expect(page.locator('.action-guidance')).toBeVisible();
   await expect(action).toHaveCSS('animation-name', 'none');
-  await expect(action).toHaveCSS('outline-width', '3px');
-  await expect(action).toBeVisible();
+  const outlineWidth = await action.evaluate((element) => Number.parseFloat(window.getComputedStyle(element).outlineWidth));
+  expect(outlineWidth).toBeGreaterThanOrEqual(3);
   await captureEvidence(page, '근거 보드', 'docs/qa/evidence/reduced-motion-current-action.png');
 });

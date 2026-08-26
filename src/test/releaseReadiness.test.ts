@@ -38,6 +38,11 @@ describe('local release-readiness packet', () => {
     }
     expect(readme).toMatch(/업데이트 내역/);
     expect(readme).toMatch(/개선.*행|행.*개선/s);
+    for (const stage of ['사건 접수', '렌즈 A/B', '근거 보드', '교차 조사(처음 생각)', '중립 기록 열기·수정 비교', '관점 전환', '사건 보고서']) {
+      expect(readme).toContain(stage);
+    }
+    expect(readme).toMatch(/중립 기록은 처음 비교를 저장하기 전까지 숨겨져/);
+    expect(readme).toMatch(/점수 없이.*사실.*이유 문장|사실.*이유 문장.*점수 없이/s);
   });
 
   it('records twelve concrete manual accessibility checks with a literal environment', () => {

@@ -2,6 +2,7 @@ import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useEffect, useRef } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { ReportResetControl } from '../features/report/ReportResetControl';
 import { ModalDialog } from './ModalDialog';
 
 afterEach(cleanup);
@@ -51,6 +52,22 @@ describe('ModalDialog', () => {
     render(<ModalDialog id="history-dialog" title="업데이트 내역" open triggerRef={triggerRef} onClose={onClose}><p>내용</p></ModalDialog>);
     await user.click(screen.getByRole('button', { name: '닫기' }));
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('restores focus after a nested inert wrapper is released', async () => {
+    const user = userEvent.setup();
+    render(
+      <ReportResetControl onReset={vi.fn()}>
+        {(triggerRef, openDialog) => (
+          <button type="button" ref={triggerRef} onClick={openDialog}>기록 초기화</button>
+        )}
+      </ReportResetControl>,
+    );
+
+    const trigger = screen.getByRole('button', { name: '기록 초기화' });
+    await user.click(trigger);
+    await user.keyboard('{Escape}');
+    await waitFor(() => expect(trigger).toHaveFocus());
   });
 
   it('does not move focus to a trigger on the initial closed mount', () => {

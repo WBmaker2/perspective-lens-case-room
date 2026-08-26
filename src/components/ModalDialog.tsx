@@ -29,7 +29,11 @@ export function ModalDialog({ id, title, open, triggerRef, children, onClose, sh
 
   useEffect(() => {
     if (!open) {
-      if (wasOpenRef.current) triggerRef.current?.focus();
+      if (wasOpenRef.current) {
+        const restoreFocus = window.setTimeout(() => triggerRef.current?.focus(), 0);
+        wasOpenRef.current = false;
+        return () => window.clearTimeout(restoreFocus);
+      }
       wasOpenRef.current = false;
       return undefined;
     }
