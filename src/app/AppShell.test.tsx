@@ -1,6 +1,6 @@
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { missingUmbrellaTag } from '../content/cases/missingUmbrellaTag';
 import { playgroundStorageBox } from '../content/cases/playgroundStorageBox';
 import { clubNoticePoster } from '../content/cases/clubNoticePoster';
@@ -9,7 +9,10 @@ import { READING_PREFERENCES_KEY, SAVED_MEMO_KEY, SESSION_KEY } from '../domain/
 import type { CaseSession, StorageAdapter } from '../model/session';
 import { AppShell } from './AppShell';
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.restoreAllMocks();
+});
 
 const completeReportSession = (): CaseSession => ({
   ...createInitialSession(),
@@ -345,5 +348,54 @@ describe('AppShell', () => {
     expect(sessionData.has(READING_PREFERENCES_KEY)).toBe(false);
     expect(sessionData.has(SAVED_MEMO_KEY)).toBe(false);
     expect(localData.has(READING_PREFERENCES_KEY)).toBe(true);
+  });
+
+  it('opens the teacher summary without changing the learner session and restores focus on close', async () => {
+    const user = userEvent.setup();
+    const session = completeReportSession();
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
+    const print = vi.spyOn(window, 'print').mockImplementation(() => undefined);
+    render(<AppShell />);
+
+    const before = sessionStorage.getItem(SESSION_KEY);
+    const trigger = screen.getByRole('button', { name: '교사용 활동 요약' });
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    expect(trigger).not.toHaveClass('gi-pulse');
+    await user.click(trigger);
+    const dialog = screen.getByRole('dialog', { name: '교사용 활동 요약' });
+    expect(sessionStorage.getItem(SESSION_KEY)).toBe(before);
+    expect(within(dialog).getAllByRole('region').map((region) => region.getAttribute('data-guide-section'))).toEqual([
+      'safety', 'overview', 'goals', 'flow', 'cases', 'rubric',
+    ]);
+    expect(document.querySelector('[data-print-region]')).toBeInTheDocument();
+
+    await user.click(within(dialog).getByRole('button', { name: '인쇄하기' }));
+    expect(print).toHaveBeenCalledTimes(1);
+    expect(sessionStorage.getItem(SESSION_KEY)).toBe(before);
+    await user.click(within(dialog).getByRole('button', { name: '닫기' }));
+    expect(trigger).toHaveFocus();
+    expect(sessionStorage.getItem(SESSION_KEY)).toBe(before);
+  });
+
+  it('includes selected narrator material, excludes incomplete reports, and includes complete reports', async () => {
+    const user = userEvent.setup();
+    const incomplete = { ...createInitialSession(), caseId: missingUmbrellaTag.id, stage: 'report' as const };
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(incomplete));
+    const first = render(<AppShell />);
+    await user.click(screen.getByRole('button', { name: '교사용 활동 요약' }));
+    const incompletePrint = document.querySelector<HTMLElement>('[data-print-region]');
+    expect(incompletePrint).toHaveTextContent(missingUmbrellaTag.title);
+    expect(incompletePrint).toHaveTextContent('가람');
+    expect(incompletePrint).toHaveTextContent('문장 1');
+    expect(incompletePrint).not.toHaveAttribute('data-print-report');
+    first.unmount();
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(completeReportSession()));
+    render(<AppShell />);
+    await user.click(screen.getByRole('button', { name: '교사용 활동 요약' }));
+    const completePrint = document.querySelector<HTMLElement>('[data-print-region]');
+    expect(completePrint).toHaveAttribute('data-print-report', 'included');
+    expect(completePrint).toHaveTextContent('사건 보고서');
+    localStorage.setItem(SAVED_MEMO_KEY, '이 메모는 인쇄하면 안 됩니다.');
+    expect(completePrint).not.toHaveTextContent('이 메모는 인쇄하면 안 됩니다.');
   });
 });

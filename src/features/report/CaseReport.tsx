@@ -1,3 +1,4 @@
+import type { RefObject } from 'react';
 import type { CasePack } from '../../model/case';
 import type { FeedbackStatus } from '../../model/feedback';
 import type { StageId } from '../../model/session';
@@ -9,6 +10,7 @@ export interface CaseReportProps {
   pack: CasePack;
   onRevisitStage: (stage: Exclude<StageId, 'intake'>) => void;
   onReset: () => void;
+  printMode?: boolean;
 }
 
 const hypothesisLabels: Readonly<Record<CaseReportModel['initialHypothesis'], string>> = {
@@ -59,7 +61,7 @@ const factLabel = (pack: CasePack, factId: string): string => {
   return pack.rewriteBlocks.find((block) => block.factIds.includes(factId))?.text ?? '기록된 사실';
 };
 
-function ComparisonSnapshot({ pack, title, draft, onRevisitStage }: { pack: CasePack; title: string; draft: CaseReportModel['initialComparison']; onRevisitStage: CaseReportProps['onRevisitStage'] }) {
+function ComparisonSnapshot({ pack, title, draft, onRevisitStage, readOnly = false }: { pack: CasePack; title: string; draft: CaseReportModel['initialComparison']; onRevisitStage: CaseReportProps['onRevisitStage']; readOnly?: boolean }) {
   const keys = Object.keys(comparisonLabels) as ComparisonKey[];
   return (
     <div className="case-report__snapshot" role="group" aria-label={title}>
@@ -88,6 +90,7 @@ function ComparisonSnapshot({ pack, title, draft, onRevisitStage }: { pack: Case
                 prefix="근거"
                 context={title}
                 onRevisitStage={onRevisitStage}
+                readOnly={readOnly}
               />
             );
           }) : <p className="muted">기록 없음</p>}
@@ -104,6 +107,7 @@ function SentenceRevisit({
   onRevisitStage,
   prefix = '근거',
   context,
+  readOnly = false,
 }: {
   pack: CasePack;
   sentenceId: string;
@@ -111,11 +115,15 @@ function SentenceRevisit({
   onRevisitStage: CaseReportProps['onRevisitStage'];
   prefix?: string;
   context?: string;
+  readOnly?: boolean;
 }) {
   const info = sentenceInfo(pack, sentenceId);
   const label = info
     ? `${context ? `${context} · ` : ''}${info.narrator.displayName} ${prefix} 문장 ${sentenceNumber} 다시 보기`
     : `${context ? `${context} · ` : ''}${prefix} 문장 ${sentenceNumber} 다시 보기`;
+  if (readOnly) {
+    return <span className="case-report__sentence-reference" data-sentence-id={sentenceId}>{label}</span>;
+  }
   return (
     <button
       className="case-report__sentence-button"
@@ -128,12 +136,12 @@ function SentenceRevisit({
   );
 }
 
-export function CaseReport({ model, pack, onRevisitStage, onReset }: CaseReportProps) {
-  return (
-    <section className="stage-content case-report" aria-labelledby="report-title">
-      <ReportResetControl onReset={onReset}>
-        {(resetTriggerRef, openResetDialog) => (
-          <>
+export function CaseReport({ model, pack, onRevisitStage, onReset, printMode = false }: CaseReportProps) {
+  const reportBody = (
+    resetTriggerRef: RefObject<HTMLButtonElement | null> | null,
+    openResetDialog: (() => void) | null,
+  ) => (
+    <>
             <div className="stage-heading-block">
               <p className="eyebrow">EVIDENCE-CENTERED REPORT / 06</p>
               <h1 id="report-title" data-stage-heading tabIndex={-1}>사건 보고서</h1>
@@ -151,6 +159,7 @@ export function CaseReport({ model, pack, onRevisitStage, onReset }: CaseReportP
                       sentenceId={evidence.sentenceId}
                       sentenceNumber={evidence.sentenceNumber}
                       onRevisitStage={onRevisitStage}
+                      readOnly={printMode}
                     />
                     <span className={`case-report__evidence-status case-report__evidence-status--${evidence.status}`}>
                       {evidenceStatusLabels[evidence.status]}
@@ -167,8 +176,8 @@ export function CaseReport({ model, pack, onRevisitStage, onReset }: CaseReportP
                 <p>{hypothesisLabels[model.initialHypothesis]}</p>
               </div>
               <div className="case-report__snapshots">
-                <ComparisonSnapshot pack={pack} title="처음 비교" draft={model.initialComparison} onRevisitStage={onRevisitStage} />
-                <ComparisonSnapshot pack={pack} title="수정한 비교" draft={model.revisedComparison} onRevisitStage={onRevisitStage} />
+                <ComparisonSnapshot pack={pack} title="처음 비교" draft={model.initialComparison} onRevisitStage={onRevisitStage} readOnly={printMode} />
+                <ComparisonSnapshot pack={pack} title="수정한 비교" draft={model.revisedComparison} onRevisitStage={onRevisitStage} readOnly={printMode} />
               </div>
               <div className="case-report__changed">
                 <span>달라진 비교 항목</span>
@@ -187,6 +196,7 @@ export function CaseReport({ model, pack, onRevisitStage, onReset }: CaseReportP
                         sentenceNumber={info?.sentence.number ?? 0}
                         prefix="이유"
                         onRevisitStage={onRevisitStage}
+                        readOnly={printMode}
                       />
                     );
                   })}
@@ -227,19 +237,30 @@ export function CaseReport({ model, pack, onRevisitStage, onReset }: CaseReportP
               ) : <p className="case-report__empty">더 살펴볼 빠진 정보가 없어요. 그래도 새로운 근거가 보이면 다시 질문해 보세요.</p>}
             </section>
 
-            <div className="case-report__actions">
-              <button
-                className="case-report__reset-trigger"
-                ref={resetTriggerRef}
-                type="button"
-                onClick={openResetDialog}
-              >
-                다른 사건 접수
-              </button>
-            </div>
-          </>
-        )}
-      </ReportResetControl>
+            {printMode ? null : (
+              <div className="case-report__actions">
+                <button
+                  className="case-report__reset-trigger"
+                  ref={resetTriggerRef ?? undefined}
+                  type="button"
+                  onClick={openResetDialog ?? undefined}
+                >
+                  다른 사건 접수
+                </button>
+              </div>
+            )}
+    </>
+  );
+
+  return (
+    <section className={`stage-content case-report${printMode ? ' case-report--print' : ''}`} aria-labelledby="report-title">
+      {printMode ? (
+        <div className="case-report__background">{reportBody(null, null)}</div>
+      ) : (
+        <ReportResetControl onReset={onReset}>
+          {(resetTriggerRef, openResetDialog) => reportBody(resetTriggerRef, openResetDialog)}
+        </ReportResetControl>
+      )}
     </section>
   );
 }

@@ -2,6 +2,8 @@ import { useCallback, useMemo, useRef, useState, type CSSProperties } from 'reac
 import { casePacks } from '../content/caseIndex';
 import { loadReadingPreferences, saveReadingPreferences } from '../domain/sessionPersistence';
 import { safetyCopy } from '../content/safetyCopy';
+import { buildCaseReport, isIncompleteCaseReportError } from '../domain/buildCaseReport';
+import { createPrintViewModel } from '../content/teacherGuide';
 import { getStageGate } from '../domain/sessionReducer';
 import type { CaseId, InitialHypothesis } from '../model/case';
 import type { CaseAction, ComparisonDraft, EvidenceSelection, RewriteDraft, StageId, StorageAdapter } from '../model/session';
@@ -11,6 +13,7 @@ import { ModalDialog } from '../components/ModalDialog';
 import { hasModalLock } from '../components/modalCoordinator';
 import { ReadingSettings } from '../features/settings/ReadingSettings';
 import { UpdateHistoryDialog } from '../features/updates/UpdateHistoryDialog';
+import { TeacherGuide } from '../features/teacher/TeacherGuide';
 import { ProgressSteps } from '../components/ProgressSteps';
 import { StageRenderer } from './StageRenderer';
 import { useCaseSession } from './useCaseSession';
@@ -55,10 +58,21 @@ export function AppShell({ storage, persistentStorage, localStorage: injectedLoc
   );
   const [readingPreferences, setReadingPreferences] = useState<ReadingPreferences>(() => loadReadingPreferences(persistentAdapter));
   const [readingWarning, setReadingWarning] = useState<string | null>(null);
-  const [openUtility, setOpenUtility] = useState<'reading' | 'updates' | null>(null);
+  const [openUtility, setOpenUtility] = useState<'reading' | 'updates' | 'teacher' | null>(null);
   const readingTriggerRef = useRef<HTMLButtonElement>(null);
   const updatesTriggerRef = useRef<HTMLButtonElement>(null);
+  const teacherTriggerRef = useRef<HTMLButtonElement>(null);
   const selectedPack = session.caseId ? casePacks.find((pack) => pack.id === session.caseId) ?? null : null;
+  const currentReport = useMemo(() => {
+    if (!selectedPack) return null;
+    try {
+      return buildCaseReport(session, selectedPack);
+    } catch (error) {
+      if (isIncompleteCaseReportError(error)) return null;
+      throw error;
+    }
+  }, [selectedPack, session]);
+  const printViewModel = useMemo(() => createPrintViewModel(selectedPack, currentReport), [currentReport, selectedPack]);
   const gate = selectedPack ? getStageGate(session, selectedPack) : { ready: false, reason: 'case-not-selected' };
   const viewModel: AppViewModel = { session, selectedPack, gate };
   useStageFocus(viewModel.session.stage);
@@ -79,7 +93,7 @@ export function AppShell({ storage, persistentStorage, localStorage: injectedLoc
   const revisitStage = (stage: Exclude<StageId, 'intake'>) => send({ type: 'REVISIT_STAGE', stage });
   const resetCase = () => send({ type: 'RESET_CASE' });
   const closeUtility = useCallback(() => setOpenUtility(null), []);
-  const openUtilityDialog = (utility: 'reading' | 'updates') => {
+  const openUtilityDialog = (utility: 'reading' | 'updates' | 'teacher') => {
     if (hasModalLock()) return;
     setOpenUtility(utility);
   };
@@ -150,6 +164,15 @@ export function AppShell({ storage, persistentStorage, localStorage: injectedLoc
           aria-controls="update-history-dialog"
           onClick={() => openUtilityDialog('updates')}
         >업데이트 내역</button>
+        <button
+          ref={teacherTriggerRef}
+          className="utility-button"
+          type="button"
+          aria-haspopup="dialog"
+          aria-expanded={openUtility === 'teacher'}
+          aria-controls="teacher-guide-dialog"
+          onClick={() => openUtilityDialog('teacher')}
+        >교사용 활동 요약</button>
       </div>
       {readingWarning ? <p className="utility-warning" role="status">{readingWarning}</p> : null}
       <ModalDialog
@@ -165,6 +188,12 @@ export function AppShell({ storage, persistentStorage, localStorage: injectedLoc
         open={openUtility === 'updates'}
         triggerRef={updatesTriggerRef}
         onClose={closeUtility}
+      />
+      <TeacherGuide
+        open={openUtility === 'teacher'}
+        triggerRef={teacherTriggerRef}
+        onClose={closeUtility}
+        viewModel={printViewModel}
       />
     </main>
   );

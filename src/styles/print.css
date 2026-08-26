@@ -1,0 +1,274 @@
+.teacher-print-region { display: none; }
+
+.teacher-guide__intro {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
+.teacher-guide__sections,
+.teacher-print-region__sections {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.teacher-guide__section {
+  min-width: 0;
+  border-top: 2px solid var(--color-navy);
+  padding-top: 0.7rem;
+}
+
+.teacher-guide__section--safety {
+  border-top-color: var(--color-orange-dark);
+}
+
+.teacher-guide__section h3,
+.teacher-guide__narrator h3 {
+  margin: 0;
+  color: var(--color-navy);
+  font-size: 1rem;
+  line-height: 1.35;
+}
+
+.teacher-guide__section ul {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0.55rem 0 0;
+  padding-left: 1.25rem;
+  color: var(--color-navy);
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
+.teacher-guide__actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1.15rem;
+}
+
+.teacher-guide__print-button {
+  min-width: 44px;
+  min-height: 44px;
+  border: 1px solid var(--color-orange-dark);
+  border-radius: 999px;
+  background: transparent;
+  padding: 0.5rem 0.8rem;
+  color: var(--color-orange-dark);
+  font-size: 0.8rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.teacher-guide__print-button:hover {
+  background: #fff1eb;
+}
+
+.teacher-guide__selected-case {
+  margin-top: 1.5rem;
+  border-top: 2px solid var(--color-navy);
+  padding-top: 1rem;
+}
+
+.teacher-guide__selected-case > h2,
+.teacher-guide__print-report > h2 {
+  margin: 0;
+  color: var(--color-navy);
+  font-size: 1.05rem;
+}
+
+.teacher-guide__case-title {
+  margin: 0.5rem 0 0;
+  color: var(--color-orange-dark);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.teacher-guide__narrators {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.8rem;
+}
+
+.teacher-guide__narrator {
+  min-width: 0;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+  background: #fffdf8;
+  padding: 0.7rem;
+}
+
+.teacher-guide__narrator > p {
+  margin: 0.2rem 0 0;
+  color: var(--color-muted);
+  font-size: 0.72rem;
+}
+
+.teacher-guide__narrator ol {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0.6rem 0 0;
+  padding-left: 1.3rem;
+  color: var(--color-navy);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.teacher-guide__narrator li {
+  min-width: 0;
+  padding-left: 0.1rem;
+  overflow-wrap: anywhere;
+}
+
+.teacher-guide__sentence-number {
+  display: block;
+  color: var(--color-teal-dark);
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.teacher-guide__print-report {
+  margin-top: 1.5rem;
+  border-top: 2px solid var(--color-navy);
+  padding-top: 1rem;
+}
+
+@media (max-width: 600px) {
+  .teacher-guide__narrators { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 420px) {
+  .utility-group {
+    right: max(0.5rem, env(safe-area-inset-right));
+    max-width: calc(100vw - 1rem - env(safe-area-inset-right));
+  }
+
+  .utility-button {
+    max-width: calc(100vw - 1rem - env(safe-area-inset-right));
+    overflow-wrap: anywhere;
+    white-space: normal;
+    text-align: center;
+  }
+}
+
+@page {
+  size: A4 portrait;
+  margin: 12mm;
+}
+
+@media print {
+  html,
+  body {
+    background: #fff !important;
+    color: #111 !important;
+  }
+
+  body { font-size: 11pt; }
+  #root,
+  .app-shell {
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .app-header,
+  .app-shell__orientation,
+  .progress,
+  .utility-group,
+  .utility-warning,
+  .stage-content:not(.case-report--print),
+  .modal-dialog-backdrop,
+  .case-report__dialog-backdrop,
+  .teacher-guide__actions,
+  [role="tablist"],
+  [role="tab"],
+  button,
+  .action-guidance,
+  .gi-pulse {
+    display: none !important;
+  }
+
+  .app-shell > *:not([data-print-region]) { display: none !important; }
+
+  [data-print-region] {
+    display: block !important;
+    width: 100% !important;
+    max-width: none !important;
+    color: #111 !important;
+    background: #fff !important;
+  }
+
+  [data-print-region] * {
+    color: #111 !important;
+    background: #fff !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  [data-print-region] .teacher-print-region__header {
+    border-bottom: 2px solid #111;
+    padding-bottom: 0.6rem;
+  }
+
+  [data-print-region] h1 {
+    margin: 0;
+    font-size: 20pt;
+    line-height: 1.2;
+  }
+
+  [data-print-region] .teacher-print-region__meta {
+    margin: 0.45rem 0 0;
+    font-size: 10pt;
+  }
+
+  [data-print-region] .teacher-guide__section,
+  [data-print-region] .teacher-guide__selected-case,
+  [data-print-region] .teacher-guide__print-report {
+    border-color: #111 !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  [data-print-region] .teacher-guide__section ul,
+  [data-print-region] .teacher-guide__narrator ol,
+  [data-print-region] .case-report__questions {
+    color: #111 !important;
+  }
+
+  [data-print-region] .teacher-guide__section--rubric li,
+  [data-print-region] .teacher-guide__narrator,
+  [data-print-region] .case-report__section,
+  [data-print-region] .case-report__snapshot,
+  [data-print-region] .case-report__evidence-row,
+  [data-print-region] .case-report__fact-row,
+  [data-print-region] .case-report__reason,
+  [data-print-region] .case-report__hypothesis,
+  [data-print-region] .case-report__changed {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  [data-print-region] .case-report--print {
+    display: block !important;
+    width: 100% !important;
+    color: #111 !important;
+  }
+
+  [data-print-region] .case-report__sentence-button,
+  [data-print-region] .case-report__reset-trigger,
+  [data-print-region] .case-report__actions,
+  [data-print-region] .modal-dialog,
+  [data-print-region] .modal-dialog-backdrop,
+  [data-print-region] .guidance,
+  [data-print-region] [data-guidance] {
+    display: none !important;
+  }
+
+  [data-print-region] .case-report__sentence-reference {
+    display: inline;
+    color: #111 !important;
+  }
+}
+
