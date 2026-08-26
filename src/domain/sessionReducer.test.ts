@@ -52,14 +52,17 @@ describe('caseSessionReducer', () => {
     expect(caseSessionReducer(session, { type: 'SAVE_REVISED_COMPARISON', draft, revisionEvidenceSentenceIds: ['mut-a-4'] }, () => missingUmbrellaTag).revisedComparison).toEqual(draft);
   });
 
-  it('rewrite gate accepts a real supported accepted set and rejects contradiction', () => {
-    const rule = clubNoticePoster.rewriteRules[1];
+  it('rewrite gate accepts a supported fixture set and rejects its real contradiction', () => {
+    const rule = pack.rewriteRules[0];
     const draft = { targetNarratorId: rule.targetNarratorId, audienceId: rule.audienceId, purposeId: rule.purposeId, blockIds: [...rule.acceptedExampleBlockSets[0]!] };
-    const session: CaseSession = { ...createInitialSession(), caseId: clubNoticePoster.id, stage: 'rewrite', rewriteDraft: draft };
-    expect(getStageGate(session, clubNoticePoster).ready).toBe(true);
-    const bad = { ...draft, blockIds: [...draft.blockIds, 'cnp-block-unknown'] };
-    expect(getStageGate({ ...session, rewriteDraft: bad }, clubNoticePoster).ready).toBe(false);
-    expect(caseSessionReducer({ ...session, rewriteDraft: draft }, { type: 'ADVANCE_STAGE' }, () => clubNoticePoster).stage).toBe('report');
+    const session: CaseSession = { ...createInitialSession(), caseId: pack.id, stage: 'rewrite', rewriteDraft: draft };
+    expect(getStageGate(session, pack).ready).toBe(true);
+    expect(caseSessionReducer(session, { type: 'ADVANCE_STAGE' }, resolve).stage).toBe('report');
+
+    const contradictoryDraft = { ...draft, blockIds: [...draft.blockIds, ...rule.contradictoryBlockIds] };
+    const contradictorySession = { ...session, rewriteDraft: contradictoryDraft };
+    expect(getStageGate(contradictorySession, pack).ready).toBe(false);
+    expect(caseSessionReducer(contradictorySession, { type: 'ADVANCE_STAGE' }, resolve).stage).toBe('rewrite');
   });
 
   it('report gate reevaluates the supported rewrite instead of trusting stage', () => {
