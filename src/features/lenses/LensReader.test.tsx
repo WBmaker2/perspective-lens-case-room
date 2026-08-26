@@ -1,0 +1,54 @@
+import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { describe, expect, it } from 'vitest';
+import { playgroundStorageBox } from '../../content/cases/playgroundStorageBox';
+import { LensReader } from './LensReader';
+
+describe('LensReader', () => {
+  it('keeps both narratives, mobile tab semantics, and the fixed difference summary', async () => {
+    const user = userEvent.setup();
+    let readNarratorIds: string[] = [];
+    let markedSentenceIds: string[] = [];
+    const view = () => (
+      <LensReader
+        pack={playgroundStorageBox}
+        readNarratorIds={readNarratorIds}
+        markedSentenceIds={markedSentenceIds}
+        onMarkRead={(narratorId) => { readNarratorIds = [...new Set([...readNarratorIds, narratorId])]; }}
+        onToggleImportantSentence={(sentenceId) => { markedSentenceIds = [...new Set([...markedSentenceIds, sentenceId])]; }}
+        onContinue={() => undefined}
+      />
+    );
+    const { rerender } = render(view());
+
+    playgroundStorageBox.narrators.forEach((narrator) => {
+      expect(screen.getByText(narrator.displayName, { exact: true })).toBeInTheDocument();
+      expect(screen.getByText(narrator.roleLabel, { exact: true })).toBeInTheDocument();
+      expect(screen.getByRole('img', { name: new RegExp(narrator.displayName) })).toBeInTheDocument();
+    });
+    expect(document.querySelectorAll('[data-border-style]')).toHaveLength(2);
+    expect(new Set([...document.querySelectorAll<HTMLElement>('[data-border-style]')].map((node) => node.dataset.borderStyle)).size).toBe(2);
+    expect(document.querySelectorAll('ol')).toHaveLength(2);
+    expect([...document.querySelectorAll('ol')].every((list) => list.querySelectorAll('li').length === 5)).toBe(true);
+    expect(screen.getByRole('tablist', { name: '렌즈 선택' })).toBeInTheDocument();
+    expect(screen.getAllByRole('tab')).toHaveLength(2);
+    expect(screen.getAllByRole('tabpanel')).toHaveLength(2);
+    const summary = screen.getByRole('region', { name: '차이 요약' });
+    expect(within(summary).getByText(/위치/)).toBeInTheDocument();
+    expect(within(summary).getByText(/관심/)).toBeInTheDocument();
+    expect(within(summary).getByText(/목적/)).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: '중요 문장 표시' })).toHaveLength(10);
+    expect(screen.getAllByRole('button', { name: '읽음 표시' })).toHaveLength(2);
+    expect(screen.getByRole('button', { name: '렌즈 읽기 완료' })).toBeDisabled();
+
+    await user.click(screen.getAllByRole('button', { name: '읽음 표시' })[0]!);
+    await user.click(screen.getAllByRole('button', { name: '읽음 표시' })[1]!);
+    await user.click(screen.getAllByRole('button', { name: '중요 문장 표시' })[0]!);
+    await user.click(screen.getAllByRole('button', { name: '중요 문장 표시' })[5]!);
+    rerender(view());
+
+    expect(screen.getAllByRole('button', { name: '중요 문장 표시' })[0]).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getAllByRole('button', { name: '중요 문장 표시' })[5]).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: '렌즈 읽기 완료' })).toBeEnabled();
+  });
+});
