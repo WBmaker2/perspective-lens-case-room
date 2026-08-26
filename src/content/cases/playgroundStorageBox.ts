@@ -44,6 +44,7 @@ const sharedFactBlocks = [
   { id: 'psb-block-objects-b', text: '공 두 개를 들고 상자로 갔다.', factIds: ['psb-f-2'], perspectiveTags: ['seen', 'quick'] },
   { id: 'psb-block-rope-a', text: '젖은 줄넘이를 옆 바구니에 따로 넣었다.', factIds: ['psb-f-3'], perspectiveTags: ['seen', 'careful'] },
   { id: 'psb-block-rope-b', text: '젖은 줄넘이는 옆 바구니로 분리되었다.', factIds: ['psb-f-3'], perspectiveTags: ['seen', 'neutral'] },
+  { id: 'psb-block-rope-c', text: '젖은 줄넘이를 옆 바구니에 넣었다.', factIds: ['psb-f-3'], perspectiveTags: ['seen', 'quick'] },
 ];
 
 export const playgroundStorageBox: CasePack = {
@@ -88,7 +89,7 @@ export const playgroundStorageBox: CasePack = {
       allowedPerspectiveTags: ['seen', 'careful', 'neutral'], contradictoryBlockIds: [],
       acceptedExampleBlockSets: [
         ['psb-block-bell-a', 'psb-block-objects-a', 'psb-block-rope-a'],
-        ['psb-block-bell-b', 'psb-block-objects-b', 'psb-block-rope-b'],
+        ['psb-block-bell-a', 'psb-block-objects-a', 'psb-block-rope-b'],
       ],
     },
     {
@@ -97,7 +98,7 @@ export const playgroundStorageBox: CasePack = {
       allowedPerspectiveTags: ['seen', 'quick', 'neutral'], contradictoryBlockIds: [],
       acceptedExampleBlockSets: [
         ['psb-block-bell-b', 'psb-block-objects-b', 'psb-block-rope-b'],
-        ['psb-block-bell-a', 'psb-block-objects-a', 'psb-block-rope-a'],
+        ['psb-block-bell-b', 'psb-block-objects-b', 'psb-block-rope-c'],
       ],
     },
   ],

@@ -11,4 +11,21 @@ describe('playgroundStorageBox', () => {
     expect(JSON.stringify(playgroundStorageBox)).not.toMatch(/liar|truthScore|winner/);
     expect(validateCasePack(playgroundStorageBox)).toEqual([]);
   });
+
+  it('keeps every accepted rewrite block within the rule tags and fact groups', () => {
+    const blocks = new Map(playgroundStorageBox.rewriteBlocks.map((block) => [block.id, block]));
+
+    playgroundStorageBox.rewriteRules.forEach((rule) => {
+      rule.acceptedExampleBlockSets.forEach((blockSet) => {
+        const selected = blockSet.map((blockId) => blocks.get(blockId));
+        expect(selected.every((block) => block !== undefined)).toBe(true);
+        selected.forEach((block) => {
+          expect(block?.perspectiveTags.every((tag) => rule.allowedPerspectiveTags.includes(tag))).toBe(true);
+        });
+        rule.requiredFactGroups.forEach((factGroup) => {
+          expect(factGroup.every((factId) => selected.some((block) => block?.factIds.includes(factId)))).toBe(true);
+        });
+      });
+    });
+  });
 });
