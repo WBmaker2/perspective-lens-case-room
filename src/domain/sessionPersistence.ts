@@ -1,6 +1,7 @@
 import type { CaseId, InitialHypothesis } from '../model/case';
 import type { CaseSession, ComparisonDraft, EvidenceSelection, RewriteDraft, StorageAdapter, PersistenceResult } from '../model/session';
 import { createInitialSession } from './sessionReducer';
+import { getCasePack } from '../content/caseIndex';
 
 export const SESSION_KEY = 'perspective-lens:session:v1';
 export const SAVED_MEMO_KEY = 'perspective-lens:saved-memo:v1';
@@ -29,7 +30,33 @@ const validSession = (value: unknown): value is CaseSession => {
   if (value.revisedComparison !== null && !draft(value.revisedComparison)) return false;
   if (value.rewriteDraft !== null && !rewrite(value.rewriteDraft)) return false;
   const allowed = ['version', 'caseId', 'stage', 'comparisonPhase', 'initialHypothesis', 'readNarratorIds', 'markedSentenceIds', 'evidenceSelections', 'initialComparison', 'revealedRecordIds', 'revisedComparison', 'revisionEvidenceSentenceIds', 'rewriteDraft'];
-  return Object.keys(value).every((key) => allowed.includes(key));
+  if (!Object.keys(value).every((key) => allowed.includes(key))) return false;
+  const session = value as unknown as CaseSession;
+  if (session.caseId === null) return session.initialHypothesis === null && session.readNarratorIds.length === 0 && session.markedSentenceIds.length === 0 && Object.keys(session.evidenceSelections).length === 0 && session.initialComparison === null && session.revealedRecordIds.length === 0 && session.revisedComparison === null && session.revisionEvidenceSentenceIds.length === 0 && session.rewriteDraft === null;
+  let pack;
+  try { pack = getCasePack(session.caseId); } catch { return false; }
+  const narratorIds = new Set(pack.narrators.map((narrator) => narrator.id));
+  const sentences = pack.narrators.flatMap((narrator) => narrator.sentences);
+  const sentenceIds = new Set(sentences.map((sentence) => sentence.id));
+  const revealRecords = new Set(pack.neutralRecords.filter((record) => record.visibility === 'reveal').map((record) => record.id));
+  if (session.readNarratorIds.some((id) => !narratorIds.has(id)) || session.markedSentenceIds.some((id) => !sentenceIds.has(id)) || session.revisionEvidenceSentenceIds.some((id) => !sentenceIds.has(id)) || session.revealedRecordIds.some((id) => !revealRecords.has(id))) return false;
+  for (const [key, selection] of Object.entries(session.evidenceSelections) as [string, EvidenceSelection][]) {
+    const sentence = sentences.find((item) => item.id === key);
+    if (!sentence || selection.sentenceId !== key || selection.categoryIds.some((category) => !categories.has(category)) || selection.selectedSegmentIds.some((id) => !sentence.segments.some((segment) => segment.id === id))) return false;
+  }
+  const validComparison = (comparison: ComparisonDraft | null): boolean => {
+    if (!comparison) return true;
+    const options = new Map(pack.comparisonOptions.map((option) => [option.id, option]));
+    const groups: [keyof ComparisonDraft, 'shared-fact' | 'different-expression' | 'missing-information'][] = [['sharedFactOptionIds', 'shared-fact'], ['differentExpressionOptionIds', 'different-expression'], ['missingInformationOptionIds', 'missing-information']];
+    if (groups.some(([key, category]) => comparison[key].some((id) => !options.has(id) || !options.get(id)!.validFor.includes(category)))) return false;
+    return comparison.supportingSentenceIds.every((id) => sentenceIds.has(id));
+  };
+  if (!validComparison(session.initialComparison) || !validComparison(session.revisedComparison)) return false;
+  if (session.rewriteDraft) {
+    const matchingRule = pack.rewriteRules.find((rule) => rule.targetNarratorId === session.rewriteDraft!.targetNarratorId && rule.audienceId === session.rewriteDraft!.audienceId && rule.purposeId === session.rewriteDraft!.purposeId);
+    if (!matchingRule || session.rewriteDraft.blockIds.some((id) => !pack.rewriteBlocks.some((block) => block.id === id))) return false;
+  }
+  return true;
 };
 
 const classify = (error: unknown): PersistenceResult => {

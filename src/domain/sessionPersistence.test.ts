@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { makeCasePackFixture } from '../test/fixtures/casePackFixture';
+import { playgroundStorageBox } from '../content/cases/playgroundStorageBox';
 import { createInitialSession } from './sessionReducer';
 import { clearSession, deleteSavedMemo, loadSavedMemo, loadSession, saveMemo, saveSession, SESSION_KEY, SAVED_MEMO_KEY } from './sessionPersistence';
 import type { StorageAdapter } from '../model/session';
@@ -36,5 +37,32 @@ describe('session persistence boundaries', () => {
   it('converts quota errors to a result', () => {
     const storage: StorageAdapter = { getItem: () => null, removeItem: () => undefined, setItem: () => { throw new DOMException('quota', 'QuotaExceededError'); } };
     expect(saveMemo(storage, 'memo')).toEqual({ ok: false, reason: 'quota' });
+  });
+
+  it('rejects mismatched evidence map keys and unknown nested identifiers', () => {
+    const storage = new MemoryStorage();
+    const base = { ...createInitialSession(), caseId: 'playground-storage-box', evidenceSelections: { wrong: { sentenceId: 'box-sentence-1', categoryIds: ['observation'], selectedSegmentIds: [] } } };
+    storage.data.set(SESSION_KEY, JSON.stringify(base));
+    expect(loadSession(storage)).toEqual(createInitialSession());
+    storage.data.set(SESSION_KEY, JSON.stringify({ ...base, evidenceSelections: { 'box-sentence-1': { sentenceId: 'box-sentence-1', categoryIds: ['observation'], selectedSegmentIds: ['unknown'] } } }));
+    expect(loadSession(storage)).toEqual(createInitialSession());
+  });
+
+  it('rejects unknown records, options, blocks, and target/rule combinations', () => {
+    const storage = new MemoryStorage();
+    const base = { ...createInitialSession(), caseId: 'playground-storage-box', revealedRecordIds: ['unknown'] };
+    storage.data.set(SESSION_KEY, JSON.stringify(base));
+    expect(loadSession(storage)).toEqual(createInitialSession());
+    const invalidRewrite = { ...base, revealedRecordIds: [], rewriteDraft: { targetNarratorId: 'narrator-caretaker', audienceId: 'teacher', purposeId: 'reflection', blockIds: ['unknown'] } };
+    storage.data.set(SESSION_KEY, JSON.stringify(invalidRewrite));
+    expect(loadSession(storage)).toEqual(createInitialSession());
+  });
+
+  it('loads a valid completed session with references that remain evaluator-safe', () => {
+    const storage = new MemoryStorage();
+    const rule = playgroundStorageBox.rewriteRules[0];
+    const session = { ...createInitialSession(), caseId: 'playground-storage-box' as const, stage: 'rewrite' as const, rewriteDraft: { targetNarratorId: rule.targetNarratorId, audienceId: rule.audienceId, purposeId: rule.purposeId, blockIds: [...rule.acceptedExampleBlockSets[0]!] } };
+    storage.data.set(SESSION_KEY, JSON.stringify(session));
+    expect(loadSession(storage).rewriteDraft).toEqual(session.rewriteDraft);
   });
 });
