@@ -1,9 +1,11 @@
 import type { CaseId, CasePack, InitialHypothesis } from '../model/case';
-import type { CaseSession, ComparisonDraft, EvidenceSelection, StageId } from '../model/session';
+import type { CaseSession, ComparisonDraft, EvidenceSelection, RewriteDraft, StageId, StorageAdapter } from '../model/session';
 import { CaseIntake } from '../features/intake/CaseIntake';
 import { LensReader } from '../features/lenses/LensReader';
 import { EvidenceBoard } from '../features/evidence/EvidenceBoard';
 import { CrossExamination } from '../features/comparison/CrossExamination';
+import { MemoPad } from '../features/rewrite/MemoPad';
+import { PerspectiveRewrite } from '../features/rewrite/PerspectiveRewrite';
 import { stageLabel } from '../model/ui';
 
 export interface StageRendererProps {
@@ -17,6 +19,9 @@ export interface StageRendererProps {
   onSaveInitialComparison: (draft: ComparisonDraft) => void;
   onRevealRecords: (recordIds: readonly string[]) => void;
   onSaveRevisedComparison: (draft: ComparisonDraft, reasonSentenceIds: readonly string[]) => void;
+  onSaveRewrite: (draft: RewriteDraft) => void;
+  storage: StorageAdapter;
+  onPersistenceMessage: (message: string) => void;
   onContinue: () => void;
 }
 
@@ -30,7 +35,7 @@ function Placeholder({ stage }: { stage: StageId }) {
   );
 }
 
-export function StageRenderer({ casePacks, session, onSelectCase, onSelectHypothesis, onMarkRead, onToggleImportantSentence, onRecordEvidence, onSaveInitialComparison, onRevealRecords, onSaveRevisedComparison, onContinue }: StageRendererProps) {
+export function StageRenderer({ casePacks, session, onSelectCase, onSelectHypothesis, onMarkRead, onToggleImportantSentence, onRecordEvidence, onSaveInitialComparison, onRevealRecords, onSaveRevisedComparison, onSaveRewrite, storage, onPersistenceMessage, onContinue }: StageRendererProps) {
   const selectedPack = session.caseId ? casePacks.find((pack) => pack.id === session.caseId) ?? null : null;
 
   switch (session.stage) {
@@ -80,7 +85,17 @@ export function StageRenderer({ casePacks, session, onSelectCase, onSelectHypoth
         />
       ) : <Placeholder stage="comparison" />;
     case 'rewrite':
-      return <Placeholder stage="rewrite" />;
+      return selectedPack ? (
+        <>
+          <PerspectiveRewrite
+            pack={selectedPack}
+            draft={session.rewriteDraft}
+            onChange={onSaveRewrite}
+            onContinue={onContinue}
+          />
+          <MemoPad caseId={selectedPack.id} storage={storage} onPersistenceMessage={onPersistenceMessage} />
+        </>
+      ) : <Placeholder stage="rewrite" />;
     case 'report':
       return <Placeholder stage="report" />;
   }

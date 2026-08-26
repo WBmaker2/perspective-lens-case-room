@@ -3,8 +3,9 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { missingUmbrellaTag } from '../content/cases/missingUmbrellaTag';
 import { playgroundStorageBox } from '../content/cases/playgroundStorageBox';
+import { clubNoticePoster } from '../content/cases/clubNoticePoster';
 import { createInitialSession } from '../domain/sessionReducer';
-import { SESSION_KEY } from '../domain/sessionPersistence';
+import { SAVED_MEMO_KEY, SESSION_KEY } from '../domain/sessionPersistence';
 import type { StorageAdapter } from '../model/session';
 import { AppShell } from './AppShell';
 
@@ -138,5 +139,40 @@ describe('AppShell', () => {
       const saved = JSON.parse(sessionStorage.getItem(SESSION_KEY) ?? '{}') as typeof comparisonSession;
       expect(saved.stage).toBe('rewrite');
     });
+  });
+
+  it('connects rewrite draft, completion, and memo to the same supplied adapter', async () => {
+    const user = userEvent.setup();
+    const data = new Map<string, string>();
+    const storage: StorageAdapter = {
+      getItem: (key) => data.get(key) ?? null,
+      setItem: (key, value) => { data.set(key, value); },
+      removeItem: (key) => { data.delete(key); },
+    };
+    data.set(SESSION_KEY, JSON.stringify({ ...createInitialSession(), caseId: clubNoticePoster.id, stage: 'rewrite' }));
+    render(<AppShell storage={storage} />);
+
+    await user.click(screen.getByRole('radio', { name: '나래' }));
+    await user.click(screen.getByRole('radio', { name: '같은 반 친구' }));
+    await user.click(screen.getByRole('radio', { name: '사실 보고' }));
+    const available = screen.getByRole('list', { name: '사용 가능한 블록' });
+    for (const blockId of clubNoticePoster.rewriteRules[0]!.acceptedExampleBlockSets[0]!) {
+      const item = available.querySelector(`[data-block-id="${blockId}"]`);
+      expect(item).not.toBeNull();
+      await user.click(within(item as HTMLElement).getByRole('button', { name: '블록 넣기' }));
+    }
+    await waitFor(() => {
+      const saved = JSON.parse(data.get(SESSION_KEY) ?? '{}') as { rewriteDraft: { blockIds: string[] } };
+      expect(saved.rewriteDraft.blockIds).toEqual([...clubNoticePoster.rewriteRules[0]!.acceptedExampleBlockSets[0]!]);
+    });
+    expect(screen.getByRole('button', { name: '관점 전환 완료' })).toHaveClass('gi-pulse');
+
+    const memo = screen.getByRole('textbox', { name: '개인 메모' });
+    await user.type(memo, '이 메모는 명시적으로 저장할 때만 남아요.');
+    expect(data.has(SAVED_MEMO_KEY)).toBe(false);
+    await user.click(screen.getByRole('button', { name: '이 기기에 메모 저장' }));
+    expect(data.get(SAVED_MEMO_KEY)).toBe('이 메모는 명시적으로 저장할 때만 남아요.');
+    await user.click(screen.getByRole('button', { name: '관점 전환 완료' }));
+    await waitFor(() => expect((JSON.parse(data.get(SESSION_KEY) ?? '{}') as { stage: string }).stage).toBe('report'));
   });
 });

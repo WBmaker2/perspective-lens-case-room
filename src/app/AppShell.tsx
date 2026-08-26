@@ -1,8 +1,9 @@
+import { useState } from 'react';
 import { casePacks } from '../content/caseIndex';
 import { safetyCopy } from '../content/safetyCopy';
 import { getStageGate } from '../domain/sessionReducer';
 import type { CaseId, InitialHypothesis } from '../model/case';
-import type { CaseAction, ComparisonDraft, EvidenceSelection, StorageAdapter } from '../model/session';
+import type { CaseAction, ComparisonDraft, EvidenceSelection, RewriteDraft, StorageAdapter } from '../model/session';
 import type { AppViewModel } from '../model/ui';
 import { ProgressSteps } from '../components/ProgressSteps';
 import { StageRenderer } from './StageRenderer';
@@ -14,7 +15,8 @@ export interface AppShellProps {
 }
 
 export function AppShell({ storage }: AppShellProps = {}) {
-  const { session, dispatch, persistenceWarning } = useCaseSession(storage);
+  const { session, dispatch, persistenceWarning, storage: sessionStorage } = useCaseSession(storage);
+  const [memoPersistenceMessage, setMemoPersistenceMessage] = useState<string | null>(null);
   const selectedPack = session.caseId ? casePacks.find((pack) => pack.id === session.caseId) ?? null : null;
   const gate = selectedPack ? getStageGate(session, selectedPack) : { ready: false, reason: 'case-not-selected' };
   const viewModel: AppViewModel = { session, selectedPack, gate };
@@ -32,6 +34,7 @@ export function AppShell({ storage }: AppShellProps = {}) {
   const saveRevisedComparison = (draft: ComparisonDraft, reasonSentenceIds: readonly string[]) => send({
     type: 'SAVE_REVISED_COMPARISON', draft, revisionEvidenceSentenceIds: reasonSentenceIds,
   });
+  const saveRewrite = (draft: RewriteDraft) => send({ type: 'SET_REWRITE_DRAFT', draft });
 
   return (
     <main className="app-shell">
@@ -52,6 +55,7 @@ export function AppShell({ storage }: AppShellProps = {}) {
       </div>
       <ProgressSteps activeStage={viewModel.session.stage} />
       {persistenceWarning && <p className="persistence-warning" role="status">{persistenceWarning}</p>}
+      {memoPersistenceMessage && <p className="persistence-warning" role="status">{memoPersistenceMessage}</p>}
       <StageRenderer
         casePacks={casePacks}
         session={viewModel.session}
@@ -63,6 +67,9 @@ export function AppShell({ storage }: AppShellProps = {}) {
         onSaveInitialComparison={saveInitialComparison}
         onRevealRecords={revealRecords}
         onSaveRevisedComparison={saveRevisedComparison}
+        onSaveRewrite={saveRewrite}
+        storage={sessionStorage}
+        onPersistenceMessage={setMemoPersistenceMessage}
         onContinue={continueStage}
       />
     </main>
