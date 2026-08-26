@@ -1,4 +1,4 @@
-import { useState, type KeyboardEvent } from 'react';
+import { useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react';
 import type { CasePack, RewriteRuleSet } from '../../model/case';
 import type { RewriteFeedback } from '../../model/feedback';
 import type { RewriteDraft } from '../../model/session';
@@ -17,6 +17,13 @@ interface LocalRewriteDraft {
   audienceId: string;
   purposeId: string;
   blockIds: string[];
+}
+
+type RewriteOperation = 'add' | 'move-up' | 'move-down' | 'remove';
+
+interface FocusTarget {
+  action: RewriteOperation;
+  blockId: string;
 }
 
 const audienceLabels: Readonly<Record<RewriteRuleSet['audienceId'], string>> = {
@@ -66,6 +73,8 @@ const activateWithKeyboard = (event: KeyboardEvent<HTMLButtonElement>, action: (
   action();
 };
 
+const controlId = (action: RewriteOperation, blockId: string): string => `rewrite-${action}-${blockId}`;
+
 function FeedbackRows({ feedback }: { feedback: RewriteFeedback }) {
   const row = (label: string, values: readonly string[], empty: string) => (
     <div className="rewrite-feedback__row" data-feedback-label={label}>
@@ -90,10 +99,25 @@ function FeedbackRows({ feedback }: { feedback: RewriteFeedback }) {
 
 export function PerspectiveRewrite({ pack, draft, onChange, onContinue }: PerspectiveRewriteProps) {
   const [local, setLocal] = useState<LocalRewriteDraft>(() => initialLocalDraft(draft));
+  const focusTarget = useRef<FocusTarget | null>(null);
 
-  const update = (next: LocalRewriteDraft) => {
+  useLayoutEffect(() => {
+    const requestedTarget = focusTarget.current;
+    if (!requestedTarget) return;
+    const target = document.getElementById(controlId(requestedTarget.action, requestedTarget.blockId));
+    if (target instanceof HTMLButtonElement && !target.disabled) {
+      target.focus({ preventScroll: true });
+    } else {
+      // A missing/disabled operation should never strand keyboard focus on body.
+      document.querySelector<HTMLButtonElement>('.rewrite-operation:not(:disabled)')?.focus({ preventScroll: true });
+    }
+    focusTarget.current = null;
+  }, [local.blockIds]);
+
+  const update = (next: LocalRewriteDraft, nextFocusTarget: FocusTarget | null = null) => {
     setLocal(next);
     if (isComplete(next)) onChange(toDraft(next));
+    focusTarget.current = nextFocusTarget;
   };
 
   const changeSelection = (key: 'targetNarratorId' | 'audienceId' | 'purposeId', value: string) => {
@@ -102,11 +126,19 @@ export function PerspectiveRewrite({ pack, draft, onChange, onContinue }: Perspe
 
   const addBlock = (blockId: string) => {
     if (local.blockIds.includes(blockId)) return;
-    update({ ...local, blockIds: [...local.blockIds, blockId] });
+    update(
+      { ...local, blockIds: [...local.blockIds, blockId] },
+      { action: 'remove', blockId },
+    );
   };
 
   const removeBlock = (index: number) => {
-    update({ ...local, blockIds: local.blockIds.filter((_, itemIndex) => itemIndex !== index) });
+    const blockId = local.blockIds[index];
+    if (!blockId) return;
+    update(
+      { ...local, blockIds: local.blockIds.filter((_, itemIndex) => itemIndex !== index) },
+      { action: 'add', blockId },
+    );
   };
 
   const moveBlock = (index: number, offset: -1 | 1) => {
@@ -115,7 +147,12 @@ export function PerspectiveRewrite({ pack, draft, onChange, onContinue }: Perspe
     const blockIds = [...local.blockIds];
     const [moved] = blockIds.splice(index, 1);
     if (moved) blockIds.splice(nextIndex, 0, moved);
-    update({ ...local, blockIds });
+    if (moved) {
+      update(
+        { ...local, blockIds },
+        { action: offset === -1 ? 'move-down' : 'move-up', blockId: moved },
+      );
+    }
   };
 
   const availableAudiences = unique(pack.rewriteRules.map((rule) => rule.audienceId));
@@ -200,7 +237,19 @@ export function PerspectiveRewrite({ pack, draft, onChange, onContinue }: Perspe
               <li className="rewrite-block" key={block.id} data-block-id={block.id}>
                 <span className="rewrite-block__text">{block.text}</span>
                 <small className="rewrite-block__id">{block.id}</small>
-                <button type="button" title={block.id} onKeyDown={(event) => activateWithKeyboard(event, () => addBlock(block.id))} onClick={() => addBlock(block.id)} disabled={local.blockIds.includes(block.id)}>블록 넣기</button>
+                <button
+                  className="rewrite-operation"
+                  id={controlId('add', block.id)}
+                  data-rewrite-action="add"
+                  data-block-id={block.id}
+                  type="button"
+                  aria-label={`블록 넣기: ${block.text} (${block.id})`}
+                  onKeyDown={(event) => activateWithKeyboard(event, () => addBlock(block.id))}
+                  onClick={() => addBlock(block.id)}
+                  disabled={local.blockIds.includes(block.id)}
+                >
+                  블록 넣기
+                </button>
               </li>
             ))}
           </ul>
@@ -210,13 +259,48 @@ export function PerspectiveRewrite({ pack, draft, onChange, onContinue }: Perspe
           <h2 id="assembled-blocks-title">내가 조립한 문장</h2>
           <ol className="rewrite-block-list rewrite-block-list--assembled" aria-label="조립한 블록">
             {assembledEntries.map(({ block, index }, displayIndex) => (
-              <li className="rewrite-block" key={`${block.id}-${index}`} data-block-id={block.id}>
+              <li className="rewrite-block" key={block.id} data-block-id={block.id}>
                 <span className="rewrite-block__order" aria-hidden="true">{displayIndex + 1}</span>
                 <span className="rewrite-block__text">{block.text}</span>
                 <div className="rewrite-block__actions">
-                  <button type="button" onKeyDown={(event) => activateWithKeyboard(event, () => moveBlock(index, -1))} onClick={() => moveBlock(index, -1)} disabled={displayIndex === 0}>위로 이동</button>
-                  <button type="button" onKeyDown={(event) => activateWithKeyboard(event, () => moveBlock(index, 1))} onClick={() => moveBlock(index, 1)} disabled={displayIndex === assembledEntries.length - 1}>아래로 이동</button>
-                  <button type="button" onKeyDown={(event) => activateWithKeyboard(event, () => removeBlock(index))} onClick={() => removeBlock(index)}>블록 빼기</button>
+                  <button
+                    className="rewrite-operation"
+                    id={controlId('move-up', block.id)}
+                    data-rewrite-action="move-up"
+                    data-block-id={block.id}
+                    type="button"
+                    aria-label={`위로 이동: ${block.text} (${block.id})`}
+                    onKeyDown={(event) => activateWithKeyboard(event, () => moveBlock(index, -1))}
+                    onClick={() => moveBlock(index, -1)}
+                    disabled={displayIndex === 0}
+                  >
+                    위로 이동
+                  </button>
+                  <button
+                    className="rewrite-operation"
+                    id={controlId('move-down', block.id)}
+                    data-rewrite-action="move-down"
+                    data-block-id={block.id}
+                    type="button"
+                    aria-label={`아래로 이동: ${block.text} (${block.id})`}
+                    onKeyDown={(event) => activateWithKeyboard(event, () => moveBlock(index, 1))}
+                    onClick={() => moveBlock(index, 1)}
+                    disabled={displayIndex === assembledEntries.length - 1}
+                  >
+                    아래로 이동
+                  </button>
+                  <button
+                    className="rewrite-operation"
+                    id={controlId('remove', block.id)}
+                    data-rewrite-action="remove"
+                    data-block-id={block.id}
+                    type="button"
+                    aria-label={`블록 빼기: ${block.text} (${block.id})`}
+                    onKeyDown={(event) => activateWithKeyboard(event, () => removeBlock(index))}
+                    onClick={() => removeBlock(index)}
+                  >
+                    블록 빼기
+                  </button>
                 </div>
               </li>
             ))}

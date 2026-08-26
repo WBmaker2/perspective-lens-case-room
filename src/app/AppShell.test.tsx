@@ -159,7 +159,7 @@ describe('AppShell', () => {
     for (const blockId of clubNoticePoster.rewriteRules[0]!.acceptedExampleBlockSets[0]!) {
       const item = available.querySelector(`[data-block-id="${blockId}"]`);
       expect(item).not.toBeNull();
-      await user.click(within(item as HTMLElement).getByRole('button', { name: '블록 넣기' }));
+      await user.click(within(item as HTMLElement).getByRole('button', { name: new RegExp(`블록 넣기.*${blockId}`) }));
     }
     await waitFor(() => {
       const saved = JSON.parse(data.get(SESSION_KEY) ?? '{}') as { rewriteDraft: { blockIds: string[] } };
@@ -172,6 +172,7 @@ describe('AppShell', () => {
     expect(data.has(SAVED_MEMO_KEY)).toBe(false);
     await user.click(screen.getByRole('button', { name: '이 기기에 메모 저장' }));
     expect(data.get(SAVED_MEMO_KEY)).toBe('이 메모는 명시적으로 저장할 때만 남아요.');
+    expect(screen.getAllByRole('status').filter((status) => status.textContent?.includes('이 기기에 메모를 저장했어요.'))).toHaveLength(1);
     await user.click(screen.getByRole('button', { name: '관점 전환 완료' }));
     await waitFor(() => expect((JSON.parse(data.get(SESSION_KEY) ?? '{}') as { stage: string }).stage).toBe('report'));
   });

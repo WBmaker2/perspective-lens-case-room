@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { casePacks } from '../content/caseIndex';
 import { safetyCopy } from '../content/safetyCopy';
 import { getStageGate } from '../domain/sessionReducer';
@@ -14,9 +13,12 @@ export interface AppShellProps {
   storage?: StorageAdapter;
 }
 
+// MemoPad owns the single live persistence status. Keep the callback contract
+// for the stage renderer without rendering the same announcement twice.
+const ignoreMemoPersistenceMessage = (message: string): void => { void message; };
+
 export function AppShell({ storage }: AppShellProps = {}) {
   const { session, dispatch, persistenceWarning, storage: sessionStorage } = useCaseSession(storage);
-  const [memoPersistenceMessage, setMemoPersistenceMessage] = useState<string | null>(null);
   const selectedPack = session.caseId ? casePacks.find((pack) => pack.id === session.caseId) ?? null : null;
   const gate = selectedPack ? getStageGate(session, selectedPack) : { ready: false, reason: 'case-not-selected' };
   const viewModel: AppViewModel = { session, selectedPack, gate };
@@ -55,7 +57,6 @@ export function AppShell({ storage }: AppShellProps = {}) {
       </div>
       <ProgressSteps activeStage={viewModel.session.stage} />
       {persistenceWarning && <p className="persistence-warning" role="status">{persistenceWarning}</p>}
-      {memoPersistenceMessage && <p className="persistence-warning" role="status">{memoPersistenceMessage}</p>}
       <StageRenderer
         casePacks={casePacks}
         session={viewModel.session}
@@ -69,7 +70,7 @@ export function AppShell({ storage }: AppShellProps = {}) {
         onSaveRevisedComparison={saveRevisedComparison}
         onSaveRewrite={saveRewrite}
         storage={sessionStorage}
-        onPersistenceMessage={setMemoPersistenceMessage}
+        onPersistenceMessage={ignoreMemoPersistenceMessage}
         onContinue={continueStage}
       />
     </main>
