@@ -12,9 +12,18 @@ npm test
 npm run test:e2e
 npm run lint
 npm run lint:filesize
+npm ci
 ```
 
-개발 서버는 기본적으로 `http://127.0.0.1:5173`에서 실행됩니다. 배포는 이 구현 요청의 범위가 아닙니다.
+개발 서버는 기본적으로 `http://127.0.0.1:5173`에서 실행됩니다. 배포는 아래 GitHub Pages workflow를 통해 수행합니다.
+
+## GitHub Pages 배포
+
+`main`에 푸시하면 `.github/workflows/pages.yml`이 `npm ci`와 품질 검사를 통과한 `dist/`를 GitHub Pages에 배포합니다. 저장소 Pages 설정의 소스는 `GitHub Actions`로 둡니다. 프로젝트 저장소 주소는 다음 규칙을 따릅니다.
+
+`https://WBmaker2.github.io/perspective-lens-case-room/`
+
+배포 후에는 Actions의 `Deploy to GitHub Pages` 실행 성공, 위 공개 주소의 문서 제목·정적 asset, 375px 학습 시작 흐름을 각각 확인합니다. 공개 주소가 아직 이전 빌드를 보이면 Actions 완료 후 새로고침하여 현재 커밋의 제목과 asset hash를 다시 확인합니다.
 
 ## 범위와 경계
 

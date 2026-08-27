@@ -22,7 +22,7 @@ describe('local release-readiness packet', () => {
     ]) {
       expect(readme).toContain(key);
     }
-    for (const boundary of ['서버 없음', 'AI 없음', '분석/추적 없음', '배포는 이 구현 요청의 범위가 아닙니다']) {
+    for (const boundary of ['서버 없음', 'AI 없음', '분석/추적 없음', 'GitHub Pages', '.github/workflows/pages.yml']) {
       expect(readme).toContain(boundary);
     }
     for (const check of ['375px', '200%', '키보드만', 'VoiceOver', '모션 감소', 'A4']) {
