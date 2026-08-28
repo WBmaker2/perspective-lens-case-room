@@ -44,7 +44,9 @@ describe('EvidenceBoard', () => {
     const { rerender } = render(view());
 
     expect(screen.getByRole('heading', { name: '근거 보드' })).toBeInTheDocument();
-    expect(screen.getByText('분류 완료 0 / 10')).toBeInTheDocument();
+    const initialProgress = screen.getByText('분류 완료 0 / 10');
+    expect(initialProgress).toBeInTheDocument();
+    expect(initialProgress).toHaveAttribute('aria-live', 'polite');
     expect(document.querySelectorAll('.gi-pulse')).toHaveLength(0);
     const firstSentence = screen.getAllByRole('button', { name: /문장 1/ })[0]!;
     firstSentence.focus();
@@ -54,7 +56,9 @@ describe('EvidenceBoard', () => {
     expect(screen.getByRole('button', { name: '근거 표시하기' })).toHaveClass('gi-pulse');
     await user.click(screen.getByRole('button', { name: '근거 표시하기' }));
     rerender(view());
-    expect(screen.getByText('분류 완료 1 / 10')).toBeInTheDocument();
+    const updatedProgress = screen.getByText('분류 완료 1 / 10');
+    expect(updatedProgress).toBeInTheDocument();
+    expect(updatedProgress).toHaveAttribute('aria-live', 'polite');
     expect(document.querySelector('[role="status"][data-feedback-sentence]')).toHaveTextContent('1번 문장');
 
     const mixed = playgroundStorageBox.narrators[0].sentences[1]!;
