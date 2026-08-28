@@ -98,4 +98,28 @@ describe('LensReader', () => {
       expect(onFocusConsumed).toHaveBeenCalledTimes(1);
     });
   });
+
+  it('fails closed for an unknown sentence focus request', async () => {
+    const onFocusConsumed = vi.fn();
+    const props = {
+      pack: missingUmbrellaTag,
+      readNarratorIds: [],
+      markedSentenceIds: [],
+      onMarkRead: () => undefined,
+      onToggleImportantSentence: () => undefined,
+      onContinue: () => undefined,
+      onFocusConsumed,
+    };
+    const { rerender } = render(<LensReader {...props} focusSentenceId={null} />);
+    const firstTab = screen.getByRole('tab', { name: '렌즈 A' });
+    firstTab.focus();
+
+    rerender(<LensReader {...props} focusSentenceId="unknown-sentence-id" />);
+
+    await waitFor(() => expect(onFocusConsumed).toHaveBeenCalledTimes(1));
+    expect(firstTab).toHaveFocus();
+    expect(firstTab).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: '렌즈 B' })).toHaveAttribute('aria-selected', 'false');
+    expect(document.querySelector('[data-sentence-id="unknown-sentence-id"]')).toBeNull();
+  });
 });
