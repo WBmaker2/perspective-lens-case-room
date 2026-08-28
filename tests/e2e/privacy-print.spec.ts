@@ -29,9 +29,8 @@ async function reachRewrite(page: Page) {
   await press(page.getByRole('button', { name: '중요 문장 표시', exact: true }).nth(pack.narrators[0].sentences.length - 1));
   await press(page.getByRole('button', { name: '근거 보드로 이동', exact: true }));
   const sentences = pack.narrators.flatMap((narrator) => narrator.sentences);
-  const sentenceButtons = page.getByRole('button', { name: /문장 \d+$/ });
-  for (const [index, sentence] of sentences.entries()) {
-    await press(sentenceButtons.nth(index));
+  for (const sentence of sentences) {
+    await press(page.getByRole('button', { name: sentenceReference(pack, sentence.id), exact: true }));
     for (const category of [...new Set(sentence.acceptedCategorySets[0] ?? [])]) await press(page.getByRole('button', { name: categoryLabels[category], exact: true }));
     if (sentence.kind === 'mixed') {
       const segments = page.getByRole('checkbox');
@@ -72,7 +71,11 @@ async function completeReport(page: Page) {
   await press(page.getByRole('radio', { name: pack.narrators.find((lens) => lens.id === rule.targetNarratorId)!.displayName }), 'Space');
   await press(page.getByRole('radio', { name: audiences[rule.audienceId] }), 'Space');
   await press(page.getByRole('radio', { name: purposes[rule.purposeId] }), 'Space');
-  for (const blockId of rule.acceptedExampleBlockSets[0] ?? []) await press(page.getByRole('button', { name: new RegExp(`블록 넣기.*${blockId}`) }));
+  for (const blockId of rule.acceptedExampleBlockSets[0] ?? []) {
+    const block = pack.rewriteBlocks.find((item) => item.id === blockId);
+    if (!block) throw new Error(`No rewrite block ${blockId}`);
+    await press(page.locator('.rewrite-block').filter({ hasText: block.text }).getByRole('button', { name: /^블록 넣기/ }));
+  }
   await press(page.getByRole('button', { name: '관점 전환 완료', exact: true }));
   await expect(page.getByRole('heading', { name: '사건 보고서' })).toBeVisible();
 }
@@ -111,7 +114,7 @@ test('keeps requests local and storage within the three-key privacy whitelist', 
   expect(keyState.local).toEqual([]);
   for (const request of requests) {
     const url = new URL(request.url);
-    expect(url.origin).toBe(BASE_ORIGIN);
+    expect(url.origin).toBe(new URL(page.url()).origin);
     expect(request.resourceType).not.toBe('websocket');
     expect(request.url).not.toMatch(/analytics|collect|api\/|fonts?|google|sentry/i);
   }
@@ -131,4 +134,5 @@ test('print media hides controls and exposes teacher guide, both lenses, and com
   await expect(page.locator('.progress')).toBeHidden();
   await expect(page.locator('.utility-group')).toBeHidden();
   await expect(page.locator('[data-print-region] button')).toHaveCount(0);
+  await expect(page.locator('button:visible, input:visible, textarea:visible, select:visible')).toHaveCount(0);
 });

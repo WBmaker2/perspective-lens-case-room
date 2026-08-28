@@ -52,10 +52,9 @@ async function selectComparison(page: Page) {
 
 async function completeEvidence(page: Page, startIndex = 0) {
   const sentences = pack.narrators.flatMap((narrator) => narrator.sentences);
-  const sentenceButtons = page.getByRole('button', { name: /문장 \d+$/ });
   for (const [index, sentence] of sentences.entries()) {
     if (index < startIndex) continue;
-    await key(sentenceButtons.nth(index));
+    await key(page.getByRole('button', { name: sentenceReference(pack, sentence.id), exact: true }));
     for (const category of [...new Set(sentence.acceptedCategorySets[0] ?? [])]) await key(page.getByRole('button', { name: categories[category], exact: true }));
     if (sentence.kind === 'mixed') {
       const segments = page.getByRole('checkbox');
@@ -100,7 +99,7 @@ test('axe, semantics, tabs, announcements, and dialogs cover the full learner pa
 
   await assertStage(page, '근거 보드');
   await noSeriousAxe(page);
-  const firstSentence = page.getByRole('button', { name: /문장 1$/ }).first();
+  const firstSentence = page.getByRole('button', { name: sentenceReference(pack, pack.narrators[0].sentences[0]!.id), exact: true });
   await expect(firstSentence).toHaveAttribute('aria-pressed', 'false');
   await key(firstSentence);
   await expect(firstSentence).toHaveAttribute('aria-pressed', 'true');
@@ -142,7 +141,11 @@ test('axe, semantics, tabs, announcements, and dialogs cover the full learner pa
   await key(page.getByRole('radio', { name: pack.narrators.find((lens) => lens.id === rule.targetNarratorId)!.displayName }), 'Space');
   await key(page.getByRole('radio', { name: audiences[rule.audienceId] }), 'Space');
   await key(page.getByRole('radio', { name: purposes[rule.purposeId] }), 'Space');
-  for (const blockId of rule.acceptedExampleBlockSets[0] ?? []) await key(page.getByRole('button', { name: new RegExp(`블록 넣기.*${blockId}`) }));
+  for (const blockId of rule.acceptedExampleBlockSets[0] ?? []) {
+    const block = pack.rewriteBlocks.find((item) => item.id === blockId);
+    if (!block) throw new Error(`No rewrite block ${blockId}`);
+    await key(page.locator('.rewrite-block').filter({ hasText: block.text }).getByRole('button', { name: /^블록 넣기/ }));
+  }
   await key(page.getByRole('button', { name: '관점 전환 완료', exact: true }));
   await assertStage(page, '사건 보고서');
   await noSeriousAxe(page);
@@ -150,6 +153,7 @@ test('axe, semantics, tabs, announcements, and dialogs cover the full learner pa
   await expect(page.getByRole('heading', { name: '다음에 해 볼 일' })).toBeVisible();
   await expect(page.getByRole('heading', { name: '오늘 배운 점' }).locator('..')).toContainText('위치·관심·목적');
   await expect(page.getByRole('heading', { name: '다음에 해 볼 일' }).locator('..')).toContainText('무엇을 추측했지?');
+  await expect(page.locator('main')).not.toContainText(/\b(?:mut|psb|cna|lws)-[a-z0-9-]+\b/);
   await expect(page.locator('.gi-pulse')).toHaveCount(0);
   await expect(page.locator('main')).not.toContainText(/점수|승자|winner|score/i);
 

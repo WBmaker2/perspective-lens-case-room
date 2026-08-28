@@ -51,10 +51,10 @@ async function selectRadio(page: Page, name: string | RegExp) {
 
 export async function completeEvidenceWithKeyboard(page: Page, pack: CasePack) {
   const allSentences = pack.narrators.flatMap((narrator) => narrator.sentences);
-  const sentenceButtons = page.getByRole('button', { name: /문장 \d+$/ });
+  const sentenceButtons = page.getByRole('button', { name: /^.+ 문장 \d+$/ });
   await expect(sentenceButtons).toHaveCount(allSentences.length);
-  for (const [index, sentence] of allSentences.entries()) {
-    await press(sentenceButtons.nth(index));
+  for (const sentence of allSentences) {
+    await press(page.getByRole('button', { name: sentenceReference(pack, sentence.id), exact: true }));
     for (const category of [...new Set(sentence.acceptedCategorySets[0] ?? [])]) {
       await press(page.getByRole('button', { name: categoryLabels[category], exact: true }));
     }
@@ -211,7 +211,9 @@ export async function completeCaseWithKeyboard(page: Page, caseId: CaseId) {
   await selectRadio(page, audienceLabels[rule.audienceId]);
   await selectRadio(page, purposeLabels[rule.purposeId]);
   for (const blockId of rule.acceptedExampleBlockSets[0] ?? []) {
-    await press(page.getByRole('button', { name: new RegExp(`블록 넣기.*${blockId}`) }));
+    const block = pack.rewriteBlocks.find((item) => item.id === blockId);
+    if (!block) throw new Error(`No rewrite block ${blockId}`);
+    await press(page.locator('.rewrite-block').filter({ hasText: block.text }).getByRole('button', { name: /^블록 넣기/ }));
   }
   const rewriteProceed = page.getByRole('button', { name: '관점 전환 완료', exact: true });
   await expect(rewriteProceed).toHaveClass(/gi-pulse/);
@@ -224,6 +226,7 @@ export async function completeCaseWithKeyboard(page: Page, caseId: CaseId) {
   }
   await expect(page.getByRole('heading', { name: '오늘 배운 점' }).locator('..')).toContainText('위치·관심·목적');
   await expect(page.getByRole('heading', { name: '다음에 해 볼 일' }).locator('..')).toContainText('무엇을 추측했지?');
+  await expect(page.locator('main')).not.toContainText(/\b(?:mut|psb|cna|lws)-[a-z0-9-]+\b/);
   await expect(page.locator('.gi-pulse')).toHaveCount(0);
   await expect(page.locator('main')).not.toContainText(/점수|승자|정답 점수|score|winner/i);
 

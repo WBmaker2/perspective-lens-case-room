@@ -68,6 +68,12 @@ npm ci
 - `docs/qa/evidence/375-report.png`
 - `docs/qa/evidence/reduced-motion-current-action.png`
 
+## 최종 통합 품질 게이트
+
+2026-08-28 통합 확인은 `npm test`, `npm run typecheck`, `npm run lint`, `npm run lint:filesize`, `npm run build`, `npx playwright test`, `git diff --check` 순서로 실행합니다. 브라우저 게이트는 네 허구 사건의 keyboard-only 완료 흐름, `오늘 배운 점`·`다음에 해 볼 일` 보고서, 문장 재방문 초점, 375px·640px 무수평스크롤, 44px 조작 영역, reduced motion 안내, 로컬 요청·저장 경계를 함께 확인합니다. 완료 보고서에는 점수·승자·정답률과 내부 사건 ID를 표시하지 않습니다.
+
+검증 산출물은 `docs/qa/evidence/375-report.png`에 저장하며, 375×812 CSS 뷰포트에서 두 학습 요약 섹션이 읽히고 가로로 잘리지 않는지 확인합니다. 이 통합 게이트는 별도의 커밋·푸시·GitHub Pages 배포 승인과 분리되어 있습니다.
+
 ## 업데이트 내역 유지 방법
 
 화면의 `업데이트 내역` 버튼과 `src/content/updateHistory.ts`를 함께 갱신합니다. 개선이 실제로 확인된 날짜를 `YYYY-MM-DD` 형식의 literal 날짜로 새 `개선` 행에 기록하고, 최신 행을 배열 앞에 둡니다. 요약에는 변경한 학습 흐름이나 접근성 범위를 짧게 적고, `src/content/updateHistory.test.ts`에 날짜·순서·정확한 요약 계약을 함께 갱신합니다. 계획 또는 예정 작업을 완료 내역으로 기록하지 않습니다.

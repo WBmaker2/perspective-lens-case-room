@@ -67,10 +67,9 @@ async function resetAndSelect(page: Page) {
 
 async function completeEvidence(page: Page, startIndex = 0) {
   const sentences = pack.narrators.flatMap((narrator) => narrator.sentences);
-  const buttons = page.getByRole('button', { name: /문장 \d+$/ });
   for (const [index, sentence] of sentences.entries()) {
     if (index < startIndex) continue;
-    await press(buttons.nth(index));
+    await press(page.getByRole('button', { name: sentenceReference(pack, sentence.id), exact: true }));
     for (const category of [...new Set(sentence.acceptedCategorySets[0] ?? [])]) await press(page.getByRole('button', { name: categories[category], exact: true }));
     if (sentence.kind === 'mixed') {
       const segments = page.getByRole('checkbox');
@@ -112,7 +111,11 @@ async function completeRewrite(page: Page) {
   await press(page.getByRole('radio', { name: pack.narrators.find((lens) => lens.id === rule.targetNarratorId)!.displayName }), 'Space');
   await press(page.getByRole('radio', { name: audiences[rule.audienceId] }), 'Space');
   await press(page.getByRole('radio', { name: purposes[rule.purposeId] }), 'Space');
-  for (const blockId of rule.acceptedExampleBlockSets[0] ?? []) await press(page.getByRole('button', { name: new RegExp(`블록 넣기.*${blockId}`) }));
+  for (const blockId of rule.acceptedExampleBlockSets[0] ?? []) {
+    const block = pack.rewriteBlocks.find((item) => item.id === blockId);
+    if (!block) throw new Error(`No rewrite block ${blockId}`);
+    await press(page.locator('.rewrite-block').filter({ hasText: block.text }).getByRole('button', { name: /^블록 넣기/ }));
+  }
   await press(page.getByRole('button', { name: '관점 전환 완료', exact: true }));
 }
 
@@ -147,8 +150,9 @@ test('375px portrait and 640px CSS viewport reflow keep controls usable', async 
     await page.setViewportSize({ width, height: 812 });
     await driveFlow(page, async () => {
       await assertNoOverflow(page);
-      if (width === 375) await assertHitTargets(page);
+      await assertHitTargets(page);
       await assertUtilityDoesNotCoverCurrentAction(page);
+      await expect.poll(() => page.locator('.gi-pulse').count()).toBeLessThanOrEqual(1);
     });
   }
   await page.setViewportSize({ width: 375, height: 812 });
@@ -179,7 +183,7 @@ test('reduced motion replaces every required-action aura with static guidance', 
   await assertReducedAction(page, '근거 보드로 이동');
   await press(page.getByRole('button', { name: '근거 보드로 이동', exact: true }));
   const first = pack.narrators[0].sentences[0]!;
-  await press(page.getByRole('button', { name: /문장 1$/ }).first());
+  await press(page.getByRole('button', { name: sentenceReference(pack, first.id), exact: true }));
   for (const category of [...new Set(first.acceptedCategorySets[0] ?? [])]) await press(page.getByRole('button', { name: categories[category], exact: true }));
   await assertReducedAction(page, '근거 표시하기');
   await press(page.getByRole('button', { name: '근거 표시하기', exact: true }));

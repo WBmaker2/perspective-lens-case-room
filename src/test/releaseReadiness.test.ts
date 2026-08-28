@@ -48,6 +48,11 @@ describe('local release-readiness packet', () => {
     }
     expect(readme).toMatch(/중립 기록은 처음 비교를 저장하기 전까지 숨겨져/);
     expect(readme).toMatch(/점수 없이.*사실.*이유 문장|사실.*이유 문장.*점수 없이/s);
+    expect(readme).toContain('최종 통합 품질 게이트');
+    expect(readme).toContain('git diff --check');
+    expect(readme).toContain('오늘 배운 점');
+    expect(readme).toContain('다음에 해 볼 일');
+    expect(readme).toContain('내부 사건 ID');
   });
 
   it('records twelve concrete manual accessibility checks with a literal environment', () => {

@@ -1,6 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { casePacks } from '../../src/content/caseIndex';
+import { sentenceReference } from '../../src/content/learnerLabels';
 import type { EvidenceCategory } from '../../src/model/case';
 
 const pack = casePacks.find((item) => item.id === 'missing-umbrella-tag')!;
@@ -38,10 +39,14 @@ async function startEvidence(page: Page) {
   await press(page.getByRole('radio', { name: /보이는 정보/ }), 'Space');
   await press(page.getByRole('button', { name: '사건 렌즈 열기', exact: true }));
   const tabs = page.getByRole('tab');
-  await press(page.getByRole('button', { name: '읽음 표시', exact: true }).nth(0));
+  const firstRead = page.getByRole('button', { name: '읽음 표시', exact: true }).nth(0);
+  await press(firstRead);
+  await expect(page.getByRole('button', { name: '읽음 취소', exact: true })).toBeVisible();
   await press(tabs.nth(1));
   await press(page.getByRole('button', { name: '읽음 표시', exact: true }).nth(0));
-  await press(page.getByRole('button', { name: '중요 문장 표시', exact: true }).nth(0));
+  const firstImportant = page.getByRole('button', { name: '중요 문장 표시', exact: true }).nth(0);
+  await press(firstImportant);
+  await expect(page.getByRole('button', { name: '중요 표시 취소', exact: true })).toBeVisible();
   await press(tabs.nth(0));
   await press(page.getByRole('button', { name: '중요 문장 표시', exact: true }).nth(0));
   await press(page.getByRole('button', { name: '근거 보드로 이동', exact: true }));
@@ -49,7 +54,7 @@ async function startEvidence(page: Page) {
 
 async function selectClassification(page: Page, index: number) {
   const sentence = pack.narrators.flatMap((narrator) => narrator.sentences)[index]!;
-  await press(page.getByRole('button', { name: /^문장 \d+/ }).nth(index));
+  await press(page.getByRole('button', { name: sentenceReference(pack, sentence.id), exact: true }));
   for (const category of [...new Set(sentence.acceptedCategorySets[0] ?? [])]) await press(page.getByRole('button', { name: categoryLabels[category], exact: true }));
   if (sentence.kind === 'mixed') {
     const segments = page.getByRole('checkbox');
@@ -80,7 +85,9 @@ async function completeComparisonAndRewrite(page: Page) {
     return { groupName, option };
   });
   for (const { groupName, option } of chosen) await press(page.getByRole('group', { name: groupName }).getByRole('checkbox', { name: option.label, exact: true }), 'Space');
-  for (const sentenceId of new Set(chosen.flatMap(({ option }) => option.evidenceSentenceIds))) await press(page.getByRole('checkbox', { name: new RegExp(`근거 문장.*${sentenceId}`) }), 'Space');
+  for (const sentenceId of new Set(chosen.flatMap(({ option }) => option.evidenceSentenceIds))) {
+    await press(page.getByRole('checkbox', { name: new RegExp(`근거 문장.*${sentenceReference(pack, sentenceId)}`) }), 'Space');
+  }
   await press(page.getByRole('button', { name: '비교 완료', exact: true }));
   await press(page.getByRole('button', { name: '추가 기록 열기', exact: true }));
 
@@ -89,10 +96,10 @@ async function completeComparisonAndRewrite(page: Page) {
   await press(shared.getByRole('checkbox', { name: chosen[0]!.option.label, exact: true }), 'Space');
   await press(shared.getByRole('checkbox', { name: changed.label, exact: true }), 'Space');
   for (const sentenceId of new Set(changed.evidenceSentenceIds)) {
-    const checkbox = page.getByRole('checkbox', { name: new RegExp(`근거 문장.*${sentenceId}`) });
+    const checkbox = page.getByRole('checkbox', { name: new RegExp(`근거 문장.*${sentenceReference(pack, sentenceId)}`) });
     if (!(await checkbox.isChecked())) await press(checkbox, 'Space');
   }
-  await press(page.getByRole('checkbox', { name: new RegExp(`이유 문장.*${pack.narrators[0].sentences[0]!.id}`) }), 'Space');
+  await press(page.getByRole('checkbox', { name: new RegExp(`이유 문장.*${sentenceReference(pack, pack.narrators[0].sentences[0]!.id)}`) }), 'Space');
   await press(page.getByRole('button', { name: '수정 비교 완료', exact: true }));
   await press(page.getByRole('button', { name: '관점 전환 시작', exact: true }));
 
@@ -100,7 +107,11 @@ async function completeComparisonAndRewrite(page: Page) {
   await press(page.getByRole('radio', { name: pack.narrators.find((lens) => lens.id === rule.targetNarratorId)!.displayName }), 'Space');
   await press(page.getByRole('radio', { name: audiences[rule.audienceId] }), 'Space');
   await press(page.getByRole('radio', { name: purposes[rule.purposeId] }), 'Space');
-  for (const blockId of rule.acceptedExampleBlockSets[0] ?? []) await press(page.getByRole('button', { name: new RegExp(`블록 넣기.*${blockId}`) }));
+  for (const blockId of rule.acceptedExampleBlockSets[0] ?? []) {
+    const block = pack.rewriteBlocks.find((item) => item.id === blockId);
+    if (!block) throw new Error(`No rewrite block ${blockId}`);
+    await press(page.locator('.rewrite-block').filter({ hasText: block.text }).getByRole('button', { name: /^블록 넣기/ }));
+  }
   await press(page.getByRole('button', { name: '관점 전환 완료', exact: true }));
 }
 
@@ -112,9 +123,11 @@ test('captures the three learner stages and reduced-motion current action', asyn
   await press(page.getByRole('button', { name: '사건 렌즈 열기', exact: true }));
   const tabs = page.getByRole('tab');
   await press(page.getByRole('button', { name: '읽음 표시', exact: true }).nth(0));
+  await expect(page.getByRole('button', { name: '읽음 취소', exact: true })).toBeVisible();
   await press(tabs.nth(1));
   await press(page.getByRole('button', { name: '읽음 표시', exact: true }).nth(0));
   await press(page.getByRole('button', { name: '중요 문장 표시', exact: true }).nth(0));
+  await expect(page.getByRole('button', { name: '중요 표시 취소', exact: true })).toBeVisible();
   await press(tabs.nth(0));
   await press(page.getByRole('button', { name: '중요 문장 표시', exact: true }).nth(0));
   await press(page.getByRole('button', { name: '근거 보드로 이동', exact: true }));
@@ -122,6 +135,10 @@ test('captures the three learner stages and reduced-motion current action', asyn
   await captureEvidence(page, '근거 보드', 'docs/qa/evidence/375-evidence.png');
   await completeAllEvidence(page, 1);
   await completeComparisonAndRewrite(page);
+  for (const heading of ['오늘 배운 점', '다음에 해 볼 일']) {
+    await expect(page.getByRole('heading', { name: heading })).toBeVisible();
+  }
+  await expect(page.locator('main')).not.toContainText(/\b(?:mut|psb|cna|lws)-[a-z0-9-]+\b/);
   await captureEvidence(page, '사건 보고서', 'docs/qa/evidence/375-report.png');
   await expect(page.locator('.gi-pulse')).toHaveCount(0);
 
