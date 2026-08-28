@@ -38,16 +38,35 @@ async function assertHitTargets(page: Page) {
   expect(tooSmall).toEqual([]);
 }
 
-async function assertUtilityDoesNotCoverCurrentAction(page: Page) {
+async function assertUtilityDoesNotCoverCurrentAction(page: Page, viewportLabel: string, stage: string) {
   const result = await page.evaluate(() => {
     const utility = document.querySelector<HTMLElement>('.utility-group');
     const action = document.querySelector<HTMLElement>('.primary-action.gi-pulse');
-    if (!utility || !action) return true;
+    const heading = document.querySelector<HTMLElement>('[data-stage-heading]');
+    const stageContent = heading?.closest<HTMLElement>('.stage-content');
+    const viewport = { width: window.innerWidth, height: window.innerHeight };
+    const scrollY = window.scrollY;
+    const rectDetails = (element: HTMLElement | null) => {
+      if (!element) return null;
+      const rect = element.getBoundingClientRect();
+      return { x: rect.x, y: rect.y, right: rect.right, bottom: rect.bottom, width: rect.width, height: rect.height };
+    };
+    if (!utility || !action) {
+      return { overlap: false, utility: rectDetails(utility), action: rectDetails(action), heading: heading?.textContent ?? null, stageWidth: stageContent?.getBoundingClientRect().width ?? null, viewport, scrollY };
+    }
     const first = utility.getBoundingClientRect();
     const second = action.getBoundingClientRect();
-    return first.right <= second.left || second.right <= first.left || first.bottom <= second.top || second.bottom <= first.top;
+    return {
+      overlap: !(first.right <= second.left || second.right <= first.left || first.bottom <= second.top || second.bottom <= first.top),
+      utility: rectDetails(utility),
+      action: rectDetails(action),
+      heading: heading?.textContent ?? null,
+      stageWidth: stageContent?.getBoundingClientRect().width ?? null,
+      viewport,
+      scrollY,
+    };
   });
-  expect(result).toBe(true);
+  expect(result.overlap, `${viewportLabel} ${stage} utility/action geometry: ${JSON.stringify(result)}`).toBe(false);
 }
 
 async function assertReducedAction(page: Page, label: string) {
@@ -148,10 +167,10 @@ async function driveFlow(page: Page, checkStage: (stage: string) => Promise<void
 test('375px portrait and 640px CSS viewport reflow keep controls usable', async ({ page }) => {
   for (const width of [375, 640]) {
     await page.setViewportSize({ width, height: 812 });
-    await driveFlow(page, async () => {
+    await driveFlow(page, async (stage) => {
       await assertNoOverflow(page);
       await assertHitTargets(page);
-      await assertUtilityDoesNotCoverCurrentAction(page);
+      await assertUtilityDoesNotCoverCurrentAction(page, `${width}px`, stage);
       await expect.poll(() => page.locator('.gi-pulse').count()).toBeLessThanOrEqual(1);
     });
   }
