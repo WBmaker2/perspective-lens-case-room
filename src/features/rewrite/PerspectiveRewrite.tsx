@@ -4,6 +4,7 @@ import type { RewriteFeedback } from '../../model/feedback';
 import type { RewriteDraft } from '../../model/session';
 import { evaluateRewrite } from '../../domain/evaluateRewrite';
 import { StageActionButton } from '../../components/StageActionButton';
+import { factReference, perspectiveTagLabels, rewriteBlockReference } from '../../content/learnerLabels';
 
 export interface PerspectiveRewriteProps {
   pack: CasePack;
@@ -75,7 +76,7 @@ const activateWithKeyboard = (event: KeyboardEvent<HTMLButtonElement>, action: (
 
 const controlId = (action: RewriteOperation, blockId: string): string => `rewrite-${action}-${blockId}`;
 
-function FeedbackRows({ feedback }: { feedback: RewriteFeedback }) {
+function FeedbackRows({ pack, feedback }: { pack: CasePack; feedback: RewriteFeedback }) {
   const row = (label: string, values: readonly string[], empty: string) => (
     <div className="rewrite-feedback__row" data-feedback-label={label}>
       <dt>{label}</dt>
@@ -88,10 +89,10 @@ function FeedbackRows({ feedback }: { feedback: RewriteFeedback }) {
       <h2 id="rewrite-feedback-title">다시 쓰기 확인</h2>
       <p className="rewrite-feedback__message" role="status">{feedback.message}</p>
       <dl className="rewrite-feedback__rows">
-        {row('보존한 사실', feedback.preservedFactIds, '아직 선택하지 않았어요.')}
+        {row('보존한 사실', feedback.preservedFactIds.map((factId) => factReference(pack, factId)), '아직 선택하지 않았어요.')}
         {row('빠진 사실 묶음', feedback.missingFactGroupIndexes.map((index) => `필요한 묶음 ${index + 1}`), '빠진 묶음이 없어요.')}
-        {row('맞은 관점 표지', feedback.matchedPerspectiveTags, '아직 맞은 표지가 없어요.')}
-        {row('모순된 블록', feedback.contradictoryBlockIds, '모순된 블록이 없어요.')}
+        {row('맞은 관점 표지', feedback.matchedPerspectiveTags.map((tag) => perspectiveTagLabels[tag] ?? '기록된 관점'), '아직 맞은 표지가 없어요.')}
+        {row('모순된 블록', feedback.contradictoryBlockIds.map((blockId) => rewriteBlockReference(pack, blockId)), '모순된 블록이 없어요.')}
       </dl>
     </section>
   );
@@ -309,7 +310,7 @@ export function PerspectiveRewrite({ pack, draft, onChange, onContinue }: Perspe
         </section>
       </div>
 
-      <FeedbackRows feedback={feedback} />
+      <FeedbackRows pack={pack} feedback={feedback} />
       <div className="stage-action-row rewrite-actions">
         <StageActionButton
           disabled={feedback.status !== 'supported'}

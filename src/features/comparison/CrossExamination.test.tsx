@@ -57,7 +57,9 @@ describe('CrossExamination', () => {
     expect(complete).toBeEnabled();
     expect(complete).toHaveClass('gi-pulse');
     expect(document.querySelectorAll('.gi-pulse')).toHaveLength(1);
-    expect(screen.getByText(/mut-a-1/)).toBeInTheDocument();
+    expect(screen.getByText('잘 연결했어요')).toBeInTheDocument();
+    expect(screen.getByText(/가람 문장 1/)).toBeInTheDocument();
+    expect(screen.queryByText(/근거 문장 ID|mut-a-1|missing-umbrella/)).not.toBeInTheDocument();
 
     await user.click(complete);
     expect(saved).toHaveLength(1);
@@ -209,9 +211,9 @@ describe('CrossExamination', () => {
     const differentGroup = screen.getByRole('group', { name: '공통 사실' });
     await user.click(differentGroup.querySelector<HTMLInputElement>('[data-option-id="mut-comparison-umbrella"]')!);
     await user.click(differentGroup.querySelector<HTMLInputElement>(`[data-option-id="${changed.id}"]`)!);
-    await user.click(screen.getByRole('checkbox', { name: /근거 문장.*mut-a-2/ }));
-    await user.click(screen.getByRole('checkbox', { name: /근거 문장.*mut-b-4/ }));
-    await user.click(screen.getByRole('checkbox', { name: /이유 문장.*mut-a-4/ }));
+    await user.click(screen.getByRole('checkbox', { name: /근거 문장 · 가람 문장 2/ }));
+    await user.click(screen.getByRole('checkbox', { name: /근거 문장 · 다온 문장 4/ }));
+    await user.click(screen.getByRole('checkbox', { name: /이유 문장 · 가람 문장 4/ }));
     expect(screen.getByRole('button', { name: '수정 비교 완료' })).toBeEnabled();
     await user.click(screen.getByRole('button', { name: '수정 비교 완료' }));
     expect(revised).toEqual(expect.objectContaining({ sharedFactOptionIds: expect.any(Array) }));

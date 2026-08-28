@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { evaluateComparison } from '../../domain/evaluateComparison';
 import { StageActionButton } from '../../components/StageActionButton';
 import { NeutralRecordReveal } from './NeutralRecordReveal';
+import { feedbackStatusLabels, sentenceReference, sentenceReferences } from '../../content/learnerLabels';
 import type { CasePack, ComparisonOption } from '../../model/case';
 import type { ComparisonFeedback } from '../../model/feedback';
 import type { ComparisonDraft, ComparisonPhase } from '../../model/session';
@@ -54,8 +55,7 @@ const hasDraftContent = (draft: ComparisonDraft): boolean => (
 const allSentenceIds = (pack: CasePack): readonly string[] =>
   pack.narrators.flatMap((narrator) => narrator.sentences.map((sentence) => sentence.id));
 
-function ComparisonFeedbackPanel({ feedback, live }: { feedback: ComparisonFeedback; live: boolean }) {
-  const sentenceIds = feedback.supportingSentenceIds.length > 0 ? feedback.supportingSentenceIds.join(', ') : '없음';
+function ComparisonFeedbackPanel({ pack, feedback, live }: { pack: CasePack; feedback: ComparisonFeedback; live: boolean }) {
   return (
     <div
       className={`comparison-feedback comparison-feedback--${feedback.status}`}
@@ -63,9 +63,9 @@ function ComparisonFeedbackPanel({ feedback, live }: { feedback: ComparisonFeedb
       aria-live={live ? 'polite' : undefined}
       data-comparison-status={feedback.status}
     >
-      <strong>{feedback.status}</strong>
+      <strong>{feedbackStatusLabels[feedback.status]}</strong>
       <span>{feedback.message}</span>
-      <span>근거 문장 ID: {sentenceIds}</span>
+      <span>근거 문장: {sentenceReferences(pack, feedback.supportingSentenceIds)}</span>
     </div>
   );
 }
@@ -129,7 +129,7 @@ function SupportingSentenceChecklist({
                 <input
                   type="checkbox"
                   checked={selectedIds.includes(sentence.id)}
-                  aria-label={`${prefix} ${sentence.id} · ${narrator.displayName} 문장 ${sentence.number}`}
+                  aria-label={`${prefix} · ${sentenceReference(pack, sentence.id)}`}
                   onChange={() => onToggle(sentence.id)}
                 />
                 <span><b>{sentence.number}.</b> {sentence.text}</span>
@@ -158,7 +158,7 @@ function InitialThought({ pack, draft }: { pack: CasePack; draft: ComparisonDraf
       <ul className="initial-thought__list">
         {selectedOptions.map((option) => <li key={option.id}>{option.label}</li>)}
       </ul>
-      <p className="initial-thought__evidence">연결한 근거 문장 ID: {draft.supportingSentenceIds.join(', ') || '없음'}</p>
+      <p className="initial-thought__evidence">연결한 근거: {sentenceReferences(pack, draft.supportingSentenceIds)}</p>
     </section>
   );
 }
@@ -297,8 +297,8 @@ export function CrossExamination({
         />
       ) : null}
 
-      {phase !== 'reveal' && feedback ? <ComparisonFeedbackPanel feedback={feedback} live /> : null}
-      {phase === 'reveal' && initialFeedback ? <ComparisonFeedbackPanel feedback={initialFeedback} live={false} /> : null}
+      {phase !== 'reveal' && feedback ? <ComparisonFeedbackPanel pack={pack} feedback={feedback} live /> : null}
+      {phase === 'reveal' && initialFeedback ? <ComparisonFeedbackPanel pack={pack} feedback={initialFeedback} live={false} /> : null}
 
       <div className="stage-action-row comparison-actions">
         {phase === 'initial' ? (

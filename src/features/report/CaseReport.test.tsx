@@ -67,6 +67,7 @@ describe('CaseReport', () => {
     expect(screen.getByText('파란 표찰은 우산 걸이 아래로 떨어져 있었다.')).toBeInTheDocument();
     expect(screen.getByText('보이는 정보를 살핀 관점')).toBeInTheDocument();
     expect(screen.queryByText('mut-f-3')).not.toBeInTheDocument();
+    expect(screen.queryByText(/근거 문장 ID|연결한 근거 문장 ID|missing-umbrella/)).not.toBeInTheDocument();
   });
 
   it('namespaces print headings and keeps every ARIA reference unique', () => {
@@ -100,9 +101,10 @@ describe('CaseReport', () => {
     expect(printReport).toHaveTextContent('인물별 문장 번호와 근거 연결 상태를 참고하세요.');
     expect(printReport).not.toHaveTextContent(/버튼을 누르세요|클릭|다시 보기/);
     expect(printReport).toHaveTextContent('가람 근거 문장 1');
-    expect(printReport).toHaveTextContent('근거 연결됨');
+    expect(printReport).toHaveTextContent('잘 연결했어요');
     expect(printReport?.querySelectorAll('.case-report__sentence-reference')).not.toHaveLength(0);
     expect(printReport?.querySelectorAll('.case-report__sentence-button')).toHaveLength(0);
+    expect(printReport).not.toHaveTextContent(/근거 문장 ID|연결한 근거 문장 ID|mut-[a-z]+-[0-9]+/);
   });
 
   it('opens a cancellable reset dialog and only resets after explicit confirmation', async () => {

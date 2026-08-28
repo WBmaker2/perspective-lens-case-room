@@ -94,6 +94,9 @@ describe('PerspectiveRewrite', () => {
     );
     await waitFor(() => expect(screen.getByRole('button', { name: '관점 전환 완료' })).not.toHaveClass('gi-pulse'));
     expect(screen.getByText(/모순된 블록/)).toBeInTheDocument();
+    const feedback = screen.getByRole('heading', { name: '다시 쓰기 확인' }).parentElement!;
+    expect(feedback).toHaveTextContent('모임 장소는 과학실이다.');
+    expect(feedback).not.toHaveTextContent('cnp-block-place-a');
     expect(document.querySelectorAll('[draggable="true"]')).toHaveLength(0);
   });
 

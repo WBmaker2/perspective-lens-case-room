@@ -1,9 +1,9 @@
 import type { RefObject } from 'react';
 import type { CasePack } from '../../model/case';
-import type { FeedbackStatus } from '../../model/feedback';
 import type { StageId } from '../../model/session';
 import type { CaseReportModel } from '../../domain/buildCaseReport';
 import { ReportResetControl } from './ReportResetControl';
+import { factReference, feedbackStatusLabels, perspectiveTagLabels } from '../../content/learnerLabels';
 
 export interface CaseReportProps {
   model: CaseReportModel;
@@ -19,26 +19,11 @@ const hypothesisLabels: Readonly<Record<CaseReportModel['initialHypothesis'], st
   'evaluative-language': '말에 담긴 평가 표현을 먼저 살폈어요.',
 };
 
-const evidenceStatusLabels: Readonly<Record<FeedbackStatus, string>> = {
-  supported: '근거 연결됨',
-  'partially-supported': '일부 연결됨',
-  revise: '다시 살펴볼 근거',
-};
-
 type ComparisonKey = 'sharedFactOptionIds' | 'differentExpressionOptionIds' | 'missingInformationOptionIds';
 const comparisonLabels: Readonly<Record<ComparisonKey, string>> = {
   sharedFactOptionIds: '공통 사실',
   differentExpressionOptionIds: '다른 표현',
   missingInformationOptionIds: '빠진 정보',
-};
-
-const perspectiveTagLabels: Readonly<Record<string, string>> = {
-  seen: '보이는 정보를 살핀 관점',
-  inference: '추론한 내용을 살핀 관점',
-  careful: '차분하게 확인한 관점',
-  neutral: '중립적으로 정리한 관점',
-  sequence: '시간 순서를 살핀 관점',
-  quick: '빠르게 핵심을 잡은 관점',
 };
 
 const sentenceInfo = (pack: CasePack, sentenceId: string) => {
@@ -52,14 +37,6 @@ const sentenceInfo = (pack: CasePack, sentenceId: string) => {
 const optionLabel = (pack: CasePack, optionId: string): string => (
   pack.comparisonOptions.find((option) => option.id === optionId)?.label ?? optionId
 );
-
-const factLabel = (pack: CasePack, factId: string): string => {
-  const neutralRecord = [...pack.neutralRecords]
-    .sort((left, right) => left.sequence - right.sequence)
-    .find((record) => record.factIds.includes(factId));
-  if (neutralRecord) return neutralRecord.text;
-  return pack.rewriteBlocks.find((block) => block.factIds.includes(factId))?.text ?? '기록된 사실';
-};
 
 function ComparisonSnapshot({ pack, title, draft, onRevisitStage, readOnly = false }: { pack: CasePack; title: string; draft: CaseReportModel['initialComparison']; onRevisitStage: CaseReportProps['onRevisitStage']; readOnly?: boolean }) {
   const keys = Object.keys(comparisonLabels) as ComparisonKey[];
@@ -120,7 +97,7 @@ function SentenceRevisit({
   const info = sentenceInfo(pack, sentenceId);
   const label = info
     ? `${context ? `${context} · ` : ''}${info.narrator.displayName} ${prefix} 문장 ${sentenceNumber}${readOnly ? '' : ' 다시 보기'}`
-    : `${context ? `${context} · ` : ''}${prefix} 문장 ${sentenceNumber}${readOnly ? '' : ' 다시 보기'}`;
+    : '근거 문장 다시 보기';
   if (readOnly) {
     return <span className="case-report__sentence-reference" data-sentence-id={sentenceId}>{label}</span>;
   }
@@ -163,7 +140,7 @@ export function CaseReport({ model, pack, onRevisitStage, onReset, printMode = f
                       readOnly={printMode}
                     />
                     <span className={`case-report__evidence-status case-report__evidence-status--${evidence.status}`}>
-                      {evidenceStatusLabels[evidence.status]}
+                      {feedbackStatusLabels[evidence.status]}
                     </span>
                   </li>
                 ))}
@@ -212,7 +189,7 @@ export function CaseReport({ model, pack, onRevisitStage, onReset, printMode = f
                 {model.preservedFactIds.length > 0 ? (
                   <ul className="case-report__facts" aria-label="보존한 사실">
                     {model.preservedFactIds.map((factId) => (
-                      <li key={factId} data-fact-id={factId}>{factLabel(pack, factId)}</li>
+                      <li key={factId} data-fact-id={factId}>{factReference(pack, factId)}</li>
                     ))}
                   </ul>
                 ) : <p>기록 없음</p>}

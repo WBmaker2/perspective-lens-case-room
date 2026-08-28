@@ -158,7 +158,7 @@ describe('AppShell', () => {
     const comparisonGroup = screen.getByRole('group', { name: '공통 사실' });
     await user.click(comparisonGroup.querySelector<HTMLInputElement>('[data-option-id="mut-comparison-umbrella"]')!);
     await user.click(comparisonGroup.querySelector<HTMLInputElement>('[data-option-id="mut-comparison-moved"]')!);
-    await user.click(screen.getByRole('checkbox', { name: /이유 문장.*mut-a-4/ }));
+    await user.click(screen.getByRole('checkbox', { name: '이유 문장 · 가람 문장 4' }));
     const saveRevision = screen.getByRole('button', { name: '수정 비교 완료' });
     expect(saveRevision).toBeEnabled();
     await user.click(saveRevision);
