@@ -68,6 +68,12 @@ describe('CaseReport', () => {
     expect(screen.getByText('보이는 정보를 살핀 관점')).toBeInTheDocument();
     expect(screen.queryByText('mut-f-3')).not.toBeInTheDocument();
     expect(screen.queryByText(/근거 문장 ID|연결한 근거 문장 ID|missing-umbrella/)).not.toBeInTheDocument();
+    const evidenceButton = screen.getByRole('button', { name: '가람 근거 문장 4 다시 보기' });
+    const reasonButton = screen.getByRole('button', { name: '가람 이유 문장 4 다시 보기' });
+    expect(evidenceButton).toHaveAccessibleName('가람 근거 문장 4 다시 보기');
+    expect(reasonButton).toHaveAccessibleName('가람 이유 문장 4 다시 보기');
+    expect(evidenceButton).not.toHaveAccessibleName(/mut-a-4/);
+    expect(reasonButton).not.toHaveAccessibleName(/mut-a-4/);
   });
 
   it('namespaces print headings and keeps every ARIA reference unique', () => {

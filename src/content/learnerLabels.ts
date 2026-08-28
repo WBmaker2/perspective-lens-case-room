@@ -1,4 +1,4 @@
-import type { CasePack, EvidenceCategory } from '../model/case';
+import type { CasePack, EvidenceCategory, NarrativeSentence } from '../model/case';
 import type { FeedbackStatus } from '../model/feedback';
 
 export const feedbackStatusLabels: Readonly<Record<FeedbackStatus, string>> = Object.freeze({
@@ -55,6 +55,6 @@ export const rewriteBlockReference = (pack: CasePack, blockId: string): string =
   pack.rewriteBlocks.find((block) => block.id === blockId)?.text ?? '문장 블록'
 );
 
-export const sentenceOwner = (pack: CasePack, sentenceId: string): string => (
-  findSentence(pack, sentenceId)?.narrator.displayName ?? '서술자'
+export const sentenceOwner = (pack: CasePack, sentence: NarrativeSentence): string => (
+  findSentence(pack, sentence.id)?.narrator.displayName ?? '서술자'
 );
