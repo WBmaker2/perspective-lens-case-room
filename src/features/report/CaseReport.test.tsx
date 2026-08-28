@@ -54,6 +54,8 @@ describe('CaseReport', () => {
       '사용한 근거',
       '처음 생각과 수정한 생각',
       '관점 전환에서 유지한 사실',
+      '오늘 배운 점',
+      '다음에 해 볼 일',
       '남은 질문',
     ]);
 
@@ -74,6 +76,25 @@ describe('CaseReport', () => {
     expect(reasonButton).toHaveAccessibleName('가람 이유 문장 4 다시 보기');
     expect(evidenceButton).not.toHaveAccessibleName(/mut-a-4/);
     expect(reasonButton).not.toHaveAccessibleName(/mut-a-4/);
+  });
+
+  it('re-enters the exact sentence from a report reason reference', async () => {
+    const user = userEvent.setup();
+    const onRevisitSentence = vi.fn();
+    render(
+      <CaseReport
+        model={model}
+        pack={missingUmbrellaTag}
+        onRevisitStage={vi.fn()}
+        onRevisitSentence={onRevisitSentence}
+        onReset={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole('heading', { name: '오늘 배운 점' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '다음에 해 볼 일' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '가람 이유 문장 4 다시 보기' }));
+    expect(onRevisitSentence).toHaveBeenCalledWith('mut-a-4');
   });
 
   it('namespaces print headings and keeps every ARIA reference unique', () => {

@@ -58,6 +58,7 @@ export function AppShell({ storage, persistentStorage, localStorage: injectedLoc
   );
   const [readingPreferences, setReadingPreferences] = useState<ReadingPreferences>(() => loadReadingPreferences(persistentAdapter));
   const [readingWarning, setReadingWarning] = useState<string | null>(null);
+  const [focusSentenceId, setFocusSentenceId] = useState<string | null>(null);
   const [openUtility, setOpenUtility] = useState<'reading' | 'updates' | 'teacher' | null>(null);
   const readingTriggerRef = useRef<HTMLButtonElement>(null);
   const updatesTriggerRef = useRef<HTMLButtonElement>(null);
@@ -91,7 +92,15 @@ export function AppShell({ storage, persistentStorage, localStorage: injectedLoc
   });
   const saveRewrite = (draft: RewriteDraft) => send({ type: 'SET_REWRITE_DRAFT', draft });
   const revisitStage = (stage: Exclude<StageId, 'intake'>) => send({ type: 'REVISIT_STAGE', stage });
-  const resetCase = () => send({ type: 'RESET_CASE' });
+  const revisitSentence = useCallback((sentenceId: string) => {
+    setFocusSentenceId(sentenceId);
+    dispatch({ type: 'REVISIT_STAGE', stage: 'lenses' });
+  }, [dispatch]);
+  const consumeFocusSentence = useCallback(() => setFocusSentenceId(null), []);
+  const resetCase = () => {
+    setFocusSentenceId(null);
+    send({ type: 'RESET_CASE' });
+  };
   const closeUtility = useCallback(() => setOpenUtility(null), []);
   const openUtilityDialog = (utility: 'reading' | 'updates' | 'teacher') => {
     if (hasModalLock()) return;
@@ -140,6 +149,9 @@ export function AppShell({ storage, persistentStorage, localStorage: injectedLoc
         onSaveRevisedComparison={saveRevisedComparison}
         onSaveRewrite={saveRewrite}
         onRevisitStage={revisitStage}
+        onRevisitSentence={revisitSentence}
+        focusSentenceId={focusSentenceId}
+        onFocusConsumed={consumeFocusSentence}
         onReset={resetCase}
         storage={persistentAdapter}
         onPersistenceMessage={ignoreMemoPersistenceMessage}

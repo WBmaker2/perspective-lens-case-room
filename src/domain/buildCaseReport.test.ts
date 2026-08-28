@@ -52,6 +52,14 @@ describe('buildCaseReport', () => {
   it('derives an ordered evidence-centered report without a score-like property', () => {
     const model = buildCaseReport(completeUmbrellaSession(), missingUmbrellaTag);
 
+    expect(model.learningTakeaway).toBeTypeOf('string');
+    expect(model.learningTakeaway).not.toBe('');
+    expect(model.learningTakeaway).toContain('가람과 다온');
+    expect(model.nextStep).toBeTypeOf('string');
+    expect(model.nextStep).not.toBe('');
+    expect(model.nextStep).toContain('무엇을 보았지?');
+    expect(model.nextStep).toContain('무엇을 추측했지?');
+
     expect(model.evidence).toEqual(
       missingUmbrellaTag.narrators.flatMap((narrator) => narrator.sentences).map((sentence) => ({
         sentenceId: sentence.id,
@@ -96,6 +104,9 @@ describe('buildCaseReport', () => {
     expect(model.revisedComparison).not.toBe(session.revisedComparison);
     expect(model.initialComparison.sharedFactOptionIds).not.toBe(session.initialComparison!.sharedFactOptionIds);
     expect(model.revisedComparison.supportingSentenceIds).not.toBe(session.revisedComparison!.supportingSentenceIds);
+    const cloned = structuredClone(model);
+    expect(cloned.learningTakeaway).toBe(model.learningTakeaway);
+    expect(cloned.nextStep).toBe(model.nextStep);
   });
 
   it('throws a developer error instead of returning a partial report', () => {

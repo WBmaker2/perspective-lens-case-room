@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { CasePack, NarratorLens } from '../../model/case';
 import { SentenceCard } from '../../components/SentenceCard';
 import { StageActionButton } from '../../components/StageActionButton';
@@ -10,6 +10,8 @@ export interface LensReaderProps {
   onMarkRead: (narratorId: string) => void;
   onToggleImportantSentence: (sentenceId: string) => void;
   onContinue: () => void;
+  focusSentenceId?: string | null;
+  onFocusConsumed?: () => void;
 }
 
 const iconPaths: Record<NarratorLens['icon'], string> = {
@@ -93,11 +95,50 @@ function LensPanel({
   );
 }
 
-export function LensReader({ pack, readNarratorIds, markedSentenceIds, onMarkRead, onToggleImportantSentence, onContinue }: LensReaderProps) {
+export function LensReader({ pack, readNarratorIds, markedSentenceIds, onMarkRead, onToggleImportantSentence, onContinue, focusSentenceId = null, onFocusConsumed }: LensReaderProps) {
   const [activeLens, setActiveLens] = useState({ packId: pack.id, narratorId: pack.narrators[0].id });
+  const consumedFocusId = useRef<string | null>(null);
   const activeNarratorId = activeLens.packId === pack.id && pack.narrators.some((lens) => lens.id === activeLens.narratorId)
     ? activeLens.narratorId
     : pack.narrators[0].id;
+
+  useEffect(() => {
+    if (!focusSentenceId) {
+      consumedFocusId.current = null;
+      return;
+    }
+    if (consumedFocusId.current === focusSentenceId) return;
+    const targetNarrator = pack.narrators.find((lens) => lens.sentences.some((sentence) => sentence.id === focusSentenceId));
+    if (!targetNarrator) {
+      consumedFocusId.current = focusSentenceId;
+      onFocusConsumed?.();
+      return;
+    }
+    if (targetNarrator.id !== activeNarratorId) {
+      let cancelled = false;
+      queueMicrotask(() => {
+        if (!cancelled) setActiveLens({ packId: pack.id, narratorId: targetNarrator.id });
+      });
+      return () => { cancelled = true; };
+    }
+
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (cancelled || consumedFocusId.current === focusSentenceId) return;
+      const target = [...document.querySelectorAll<HTMLElement>('[data-sentence-id]')]
+        .find((element) => element.dataset.sentenceId === focusSentenceId);
+      const button = target?.querySelector<HTMLButtonElement>('button');
+      consumedFocusId.current = focusSentenceId;
+      if (!target || !button) {
+        onFocusConsumed?.();
+        return;
+      }
+      target.scrollIntoView?.({ block: 'center' });
+      button.focus({ preventScroll: true });
+      onFocusConsumed?.();
+    });
+    return () => { cancelled = true; };
+  }, [activeNarratorId, focusSentenceId, onFocusConsumed, pack]);
 
   const complete = pack.narrators.every((lens) => {
     const read = readNarratorIds.includes(lens.id);

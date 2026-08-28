@@ -146,6 +146,10 @@ test('axe, semantics, tabs, announcements, and dialogs cover the full learner pa
   await key(page.getByRole('button', { name: '관점 전환 완료', exact: true }));
   await assertStage(page, '사건 보고서');
   await noSeriousAxe(page);
+  await expect(page.getByRole('heading', { name: '오늘 배운 점' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '다음에 해 볼 일' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '오늘 배운 점' }).locator('..')).toContainText('위치·관심·목적');
+  await expect(page.getByRole('heading', { name: '다음에 해 볼 일' }).locator('..')).toContainText('무엇을 추측했지?');
   await expect(page.locator('.gi-pulse')).toHaveCount(0);
   await expect(page.locator('main')).not.toContainText(/점수|승자|winner|score/i);
 

@@ -231,6 +231,21 @@ describe('AppShell', () => {
     expect(persisted.rewriteDraft).toEqual(session.rewriteDraft);
   });
 
+  it('revisits the report at the requested sentence', async () => {
+    const user = userEvent.setup();
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(completeReportSession()));
+    render(<AppShell />);
+
+    await user.click(screen.getByRole('button', { name: '가람 이유 문장 4 다시 보기' }));
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: '렌즈 A/B' })).toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: '렌즈 A' })).toHaveAttribute('aria-selected', 'true');
+      const target = document.querySelector<HTMLElement>('[data-sentence-id="mut-a-4"]');
+      expect(target).not.toBeNull();
+      expect(target?.querySelector('button')).toHaveFocus();
+    });
+  });
+
   it('confirms report reset while preserving an explicitly saved memo', async () => {
     const user = userEvent.setup();
     sessionStorage.setItem(SESSION_KEY, JSON.stringify(completeReportSession()));
@@ -297,7 +312,7 @@ describe('AppShell', () => {
 
     const settings = screen.getByRole('button', { name: '읽기 설정' });
     await user.click(settings);
-    await user.click(screen.getByRole('radio', { name: '22px' }));
+    await user.click(screen.getByRole('radio', { name: /크게22px/ }));
     const shell = document.querySelector<HTMLElement>('.app-shell');
     expect(shell?.style.getPropertyValue('--reading-size')).toBe('22px');
     expect(shell?.style.getPropertyValue('--reading-line-height')).toBe('1.8');
@@ -344,7 +359,7 @@ describe('AppShell', () => {
     render(<AppShell storage={adapter(sessionData)} persistentStorage={adapter(localData)} />);
 
     await user.click(screen.getByRole('button', { name: '읽기 설정' }));
-    await user.click(screen.getByRole('radio', { name: '22px' }));
+    await user.click(screen.getByRole('radio', { name: /크게22px/ }));
     expect(sessionData.has(READING_PREFERENCES_KEY)).toBe(false);
     expect(sessionData.has(SAVED_MEMO_KEY)).toBe(false);
     expect(localData.has(READING_PREFERENCES_KEY)).toBe(true);

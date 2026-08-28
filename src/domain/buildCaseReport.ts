@@ -4,6 +4,7 @@ import { evaluateRewrite } from './evaluateRewrite';
 import type { CasePack, InitialHypothesis } from '../model/case';
 import type { CaseReportEvidence, FeedbackStatus } from '../model/feedback';
 import type { CaseSession, ComparisonDraft } from '../model/session';
+import { createReportLearningCopy } from '../content/reportCopy';
 
 export interface CaseReportModel {
   evidence: readonly CaseReportEvidence[];
@@ -14,6 +15,8 @@ export interface CaseReportModel {
   revisionEvidenceSentenceIds: readonly string[];
   preservedFactIds: readonly string[];
   perspectiveTags: readonly string[];
+  learningTakeaway: string;
+  nextStep: string;
   remainingQuestions: readonly string[];
 }
 
@@ -160,6 +163,7 @@ export function buildCaseReport(session: CaseSession, pack: CasePack): CaseRepor
   const remainingQuestions = pack.comparisonOptions
     .filter((option) => option.validFor.includes('missing-information') && !revisedSelectedIds.has(option.id))
     .map((option) => option.label);
+  const learningCopy = createReportLearningCopy(pack.narrators.map((narrator) => narrator.displayName));
 
   return {
     evidence,
@@ -170,6 +174,8 @@ export function buildCaseReport(session: CaseSession, pack: CasePack): CaseRepor
     revisionEvidenceSentenceIds: [...session.revisionEvidenceSentenceIds],
     preservedFactIds: [...rewriteFeedback.preservedFactIds],
     perspectiveTags: [...rewriteFeedback.matchedPerspectiveTags],
+    learningTakeaway: learningCopy.takeaway,
+    nextStep: learningCopy.nextStep,
     remainingQuestions,
   };
 }

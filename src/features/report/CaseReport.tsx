@@ -9,6 +9,7 @@ export interface CaseReportProps {
   model: CaseReportModel;
   pack: CasePack;
   onRevisitStage: (stage: Exclude<StageId, 'intake'>) => void;
+  onRevisitSentence?: (sentenceId: string) => void;
   onReset: () => void;
   printMode?: boolean;
 }
@@ -38,7 +39,7 @@ const optionLabel = (pack: CasePack, optionId: string): string => (
   pack.comparisonOptions.find((option) => option.id === optionId)?.label ?? optionId
 );
 
-function ComparisonSnapshot({ pack, title, draft, onRevisitStage, readOnly = false }: { pack: CasePack; title: string; draft: CaseReportModel['initialComparison']; onRevisitStage: CaseReportProps['onRevisitStage']; readOnly?: boolean }) {
+function ComparisonSnapshot({ pack, title, draft, onRevisitStage, onRevisitSentence, readOnly = false }: { pack: CasePack; title: string; draft: CaseReportModel['initialComparison']; onRevisitStage: CaseReportProps['onRevisitStage']; onRevisitSentence?: CaseReportProps['onRevisitSentence']; readOnly?: boolean }) {
   const keys = Object.keys(comparisonLabels) as ComparisonKey[];
   return (
     <div className="case-report__snapshot" role="group" aria-label={title}>
@@ -67,6 +68,7 @@ function ComparisonSnapshot({ pack, title, draft, onRevisitStage, readOnly = fal
                 prefix="근거"
                 context={title}
                 onRevisitStage={onRevisitStage}
+                onRevisitSentence={onRevisitSentence}
                 readOnly={readOnly}
               />
             );
@@ -82,6 +84,7 @@ function SentenceRevisit({
   sentenceId,
   sentenceNumber,
   onRevisitStage,
+  onRevisitSentence,
   prefix = '근거',
   context,
   readOnly = false,
@@ -90,6 +93,7 @@ function SentenceRevisit({
   sentenceId: string;
   sentenceNumber: number;
   onRevisitStage: CaseReportProps['onRevisitStage'];
+  onRevisitSentence?: CaseReportProps['onRevisitSentence'];
   prefix?: string;
   context?: string;
   readOnly?: boolean;
@@ -106,14 +110,14 @@ function SentenceRevisit({
       className="case-report__sentence-button"
       type="button"
       data-sentence-id={sentenceId}
-      onClick={() => onRevisitStage('lenses')}
+      onClick={() => onRevisitSentence ? onRevisitSentence(sentenceId) : onRevisitStage('lenses')}
     >
       {label}
     </button>
   );
 }
 
-export function CaseReport({ model, pack, onRevisitStage, onReset, printMode = false }: CaseReportProps) {
+export function CaseReport({ model, pack, onRevisitStage, onRevisitSentence, onReset, printMode = false }: CaseReportProps) {
   const headingPrefix = printMode ? 'teacher-print-report' : 'report';
   const reportBody = (
     resetTriggerRef: RefObject<HTMLButtonElement | null> | null,
@@ -137,6 +141,7 @@ export function CaseReport({ model, pack, onRevisitStage, onReset, printMode = f
                       sentenceId={evidence.sentenceId}
                       sentenceNumber={evidence.sentenceNumber}
                       onRevisitStage={onRevisitStage}
+                      onRevisitSentence={onRevisitSentence}
                       readOnly={printMode}
                     />
                     <span className={`case-report__evidence-status case-report__evidence-status--${evidence.status}`}>
@@ -154,8 +159,8 @@ export function CaseReport({ model, pack, onRevisitStage, onReset, printMode = f
                 <p>{hypothesisLabels[model.initialHypothesis]}</p>
               </div>
               <div className="case-report__snapshots">
-                <ComparisonSnapshot pack={pack} title="처음 비교" draft={model.initialComparison} onRevisitStage={onRevisitStage} readOnly={printMode} />
-                <ComparisonSnapshot pack={pack} title="수정한 비교" draft={model.revisedComparison} onRevisitStage={onRevisitStage} readOnly={printMode} />
+                <ComparisonSnapshot pack={pack} title="처음 비교" draft={model.initialComparison} onRevisitStage={onRevisitStage} onRevisitSentence={onRevisitSentence} readOnly={printMode} />
+                <ComparisonSnapshot pack={pack} title="수정한 비교" draft={model.revisedComparison} onRevisitStage={onRevisitStage} onRevisitSentence={onRevisitSentence} readOnly={printMode} />
               </div>
               <div className="case-report__changed">
                 <span>달라진 비교 항목</span>
@@ -174,6 +179,7 @@ export function CaseReport({ model, pack, onRevisitStage, onReset, printMode = f
                         sentenceNumber={info?.sentence.number ?? 0}
                         prefix="이유"
                         onRevisitStage={onRevisitStage}
+                        onRevisitSentence={onRevisitSentence}
                         readOnly={printMode}
                       />
                     );
@@ -204,6 +210,16 @@ export function CaseReport({ model, pack, onRevisitStage, onReset, printMode = f
                   </ul>
                 ) : <p>기록 없음</p>}
               </div>
+            </section>
+
+            <section className="case-report__section" aria-labelledby={`${headingPrefix}-takeaway-title`}>
+              <h2 id={`${headingPrefix}-takeaway-title`}>오늘 배운 점</h2>
+              <p className="case-report__intro">{model.learningTakeaway}</p>
+            </section>
+
+            <section className="case-report__section" aria-labelledby={`${headingPrefix}-next-step-title`}>
+              <h2 id={`${headingPrefix}-next-step-title`}>다음에 해 볼 일</h2>
+              <p className="case-report__intro">{model.nextStep}</p>
             </section>
 
             <section className="case-report__section" aria-labelledby={`${headingPrefix}-questions-title`}>

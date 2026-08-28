@@ -219,11 +219,24 @@ export async function completeCaseWithKeyboard(page: Page, caseId: CaseId) {
   await press(rewriteProceed);
 
   await expect(page.getByRole('heading', { name: '사건 보고서' })).toBeVisible();
-  for (const heading of ['사용한 근거', '처음 생각과 수정한 생각', '관점 전환에서 유지한 사실', '남은 질문']) {
+  for (const heading of ['사용한 근거', '처음 생각과 수정한 생각', '관점 전환에서 유지한 사실', '오늘 배운 점', '다음에 해 볼 일', '남은 질문']) {
     await expect(page.getByRole('heading', { name: heading })).toBeVisible();
   }
+  await expect(page.getByRole('heading', { name: '오늘 배운 점' }).locator('..')).toContainText('위치·관심·목적');
+  await expect(page.getByRole('heading', { name: '다음에 해 볼 일' }).locator('..')).toContainText('무엇을 추측했지?');
   await expect(page.locator('.gi-pulse')).toHaveCount(0);
   await expect(page.locator('main')).not.toContainText(/점수|승자|정답 점수|score|winner/i);
+
+  await page.setViewportSize({ width: 375, height: 812 });
+  const revisitSentence = pack.narrators[0].sentences[0]!;
+  const revisit = page.getByRole('button', {
+    name: `${pack.narrators[0].displayName} 이유 문장 ${revisitSentence.number} 다시 보기`,
+    exact: true,
+  });
+  await press(revisit);
+  await expect(page.getByRole('heading', { name: '렌즈 A/B' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: '렌즈 A' })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.locator(`[data-sentence-id="${revisitSentence.id}"]`).getByRole('button', { name: /중요/ })).toBeFocused();
 }
 
 test.describe('complete four fictional cases with keyboard-only controls', () => {

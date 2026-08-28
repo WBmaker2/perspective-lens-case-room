@@ -24,6 +24,9 @@ export interface StageRendererProps {
   onSaveRevisedComparison: (draft: ComparisonDraft, reasonSentenceIds: readonly string[]) => void;
   onSaveRewrite: (draft: RewriteDraft) => void;
   onRevisitStage: (stage: Exclude<StageId, 'intake'>) => void;
+  onRevisitSentence: (sentenceId: string) => void;
+  focusSentenceId: string | null;
+  onFocusConsumed: () => void;
   onReset: () => void;
   storage: StorageAdapter;
   onPersistenceMessage: (message: string) => void;
@@ -64,7 +67,7 @@ function IncompleteReportRecovery({ onRevisitStage, onReset }: Pick<StageRendere
   );
 }
 
-export function StageRenderer({ casePacks, session, onSelectCase, onSelectHypothesis, onMarkRead, onToggleImportantSentence, onRecordEvidence, onSaveInitialComparison, onRevealRecords, onSaveRevisedComparison, onSaveRewrite, onRevisitStage, onReset, storage, onPersistenceMessage, onContinue }: StageRendererProps) {
+export function StageRenderer({ casePacks, session, onSelectCase, onSelectHypothesis, onMarkRead, onToggleImportantSentence, onRecordEvidence, onSaveInitialComparison, onRevealRecords, onSaveRevisedComparison, onSaveRewrite, onRevisitStage, onRevisitSentence, focusSentenceId, onFocusConsumed, onReset, storage, onPersistenceMessage, onContinue }: StageRendererProps) {
   const selectedPack = session.caseId ? casePacks.find((pack) => pack.id === session.caseId) ?? null : null;
 
   switch (session.stage) {
@@ -87,6 +90,8 @@ export function StageRenderer({ casePacks, session, onSelectCase, onSelectHypoth
           onMarkRead={onMarkRead}
           onToggleImportantSentence={onToggleImportantSentence}
           onContinue={onContinue}
+          focusSentenceId={focusSentenceId}
+          onFocusConsumed={onFocusConsumed}
         />
       ) : <Placeholder stage="lenses" />;
     case 'evidence':
@@ -136,7 +141,7 @@ export function StageRenderer({ casePacks, session, onSelectCase, onSelectHypoth
         }
         throw error;
       }
-      return <CaseReport model={reportModel} pack={selectedPack} onRevisitStage={onRevisitStage} onReset={onReset} />;
+      return <CaseReport model={reportModel} pack={selectedPack} onRevisitStage={onRevisitStage} onRevisitSentence={onRevisitSentence} onReset={onReset} />;
     }
   }
 

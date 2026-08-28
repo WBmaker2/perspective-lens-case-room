@@ -1,10 +1,13 @@
-import { render, screen, within } from '@testing-library/react';
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { playgroundStorageBox } from '../../content/cases/playgroundStorageBox';
+import { missingUmbrellaTag } from '../../content/cases/missingUmbrellaTag';
 import { LensReader } from './LensReader';
 
 describe('LensReader', () => {
+  afterEach(cleanup);
+
   it('keeps both narratives, mobile tab semantics, and the fixed difference summary', async () => {
     const user = userEvent.setup();
     let readNarratorIds: string[] = [];
@@ -70,5 +73,29 @@ describe('LensReader', () => {
     await user.keyboard('{ArrowLeft}');
     expect(tabs[0]).toHaveAttribute('aria-selected', 'true');
     expect(tabs[0]).toHaveFocus();
+  });
+
+  it('selects the narrator and focuses a sentence requested by the report', async () => {
+    const onFocusConsumed = vi.fn();
+    render(
+      <LensReader
+        pack={missingUmbrellaTag}
+        readNarratorIds={[]}
+        markedSentenceIds={[]}
+        onMarkRead={() => undefined}
+        onToggleImportantSentence={() => undefined}
+        onContinue={() => undefined}
+        focusSentenceId="mut-b-4"
+        onFocusConsumed={onFocusConsumed}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('tab', { name: '렌즈 B' })).toHaveAttribute('aria-selected', 'true');
+      const target = document.querySelector<HTMLElement>('[data-sentence-id="mut-b-4"]');
+      expect(target).not.toBeNull();
+      expect(target?.querySelector('button')).toHaveFocus();
+      expect(onFocusConsumed).toHaveBeenCalledTimes(1);
+    });
   });
 });
