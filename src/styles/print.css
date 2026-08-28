@@ -141,14 +141,17 @@
 
 @media (max-width: 420px) {
   .utility-group {
+    left: max(0.5rem, env(safe-area-inset-left));
     right: max(0.5rem, env(safe-area-inset-right));
-    max-width: calc(100vw - 1rem - env(safe-area-inset-right));
+    width: auto;
+    max-width: none;
   }
 
   .utility-button {
-    max-width: calc(100vw - 1rem - env(safe-area-inset-right));
-    overflow-wrap: anywhere;
-    white-space: normal;
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: none;
+    white-space: nowrap;
     text-align: center;
   }
 }

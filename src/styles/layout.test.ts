@@ -3,6 +3,8 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const layoutCss = readFileSync(resolve(process.cwd(), 'src/styles/layout.css'), 'utf8');
+const printCss = readFileSync(resolve(process.cwd(), 'src/styles/print.css'), 'utf8');
+const mainTsx = readFileSync(resolve(process.cwd(), 'src/main.tsx'), 'utf8');
 
 describe('narrow viewport layout contract', () => {
   it('reserves the stacked utility group and separates persistence warnings', () => {
@@ -20,6 +22,15 @@ describe('narrow viewport layout contract', () => {
     const mobileMedia = layoutCss.match(/@media \(max-width: 600px\) \{([\s\S]*?)\n\}/)?.[1] ?? '';
     expect(mobileMedia).toMatch(/\.utility-group\s*\{[\s\S]*left:\s*max\(0\.5rem,\s*env\(safe-area-inset-left\)\);[\s\S]*right:\s*max\(0\.5rem,\s*env\(safe-area-inset-right\)\);[\s\S]*width:\s*auto;[\s\S]*max-width:\s*none;/);
     expect(mobileMedia).toMatch(/\.utility-button\s*\{[\s\S]*flex:\s*1 1 0;[\s\S]*min-width:\s*0;[\s\S]*white-space:\s*nowrap;/);
+  });
+
+  it('keeps the final print stylesheet cascade aligned with mobile utility layout', () => {
+    expect(mainTsx.indexOf("import './styles/layout.css';")).toBeLessThan(mainTsx.indexOf("import './styles/print.css';"));
+    const printMobileMedia = printCss.match(/@media \(max-width: 420px\) \{([\s\S]*?)\n\}/)?.[1] ?? '';
+    expect(printMobileMedia).toMatch(/\.utility-group\s*\{[\s\S]*left:\s*max\(0\.5rem,\s*env\(safe-area-inset-left\)\);[\s\S]*right:\s*max\(0\.5rem,\s*env\(safe-area-inset-right\)\);[\s\S]*width:\s*auto;[\s\S]*max-width:\s*none;/);
+    expect(printMobileMedia).toMatch(/\.utility-button\s*\{[\s\S]*flex:\s*1 1 0;[\s\S]*min-width:\s*0;[\s\S]*max-width:\s*none;[\s\S]*white-space:\s*nowrap;/);
+    const printMedia = printCss.slice(printCss.indexOf('@media print'));
+    expect(printMedia).toMatch(/\.utility-group[\s\S]*display:\s*none\s*!important;/);
   });
 
   it('keeps each lens narrative item full-width around its SentenceCard', () => {
