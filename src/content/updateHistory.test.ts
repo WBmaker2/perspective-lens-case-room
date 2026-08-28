@@ -10,7 +10,7 @@ describe('update history', () => {
     expect(updateHistory[0]).toMatchObject({
       date: '2026-08-28',
       category: '개선',
-      summary: '320·375·640px에서 고정 학습 도구와 현재 행동 버튼이 겹치지 않도록 한 줄 배치 안정화',
+      summary: '375·640px에서 고정 학습 도구와 현재 행동 버튼이 겹치지 않도록 한 줄 배치 안정화',
     });
     expect(updateHistory[1]).toMatchObject({
       date: '2026-08-28',

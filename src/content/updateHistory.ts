@@ -3,7 +3,7 @@ import type { UpdateEntry } from '../model/ui';
 import { casePacks } from './caseIndex';
 
 export const BASE_UPDATE_ENTRIES: readonly UpdateEntry[] = [
-  { date: '2026-08-28', category: '개선', summary: '320·375·640px에서 고정 학습 도구와 현재 행동 버튼이 겹치지 않도록 한 줄 배치 안정화' },
+  { date: '2026-08-28', category: '개선', summary: '375·640px에서 고정 학습 도구와 현재 행동 버튼이 겹치지 않도록 한 줄 배치 안정화' },
   { date: '2026-08-28', category: '개선', summary: '375px 렌즈 문장 가로 배치, 학습자 표현 정리, 보고서 배운 점·다음 행동, 문장 재방문 초점, 파비콘 추가' },
   { date: '2026-08-27', category: '개선', summary: '375px 모바일, 키보드 전체 흐름, 스크린 리더 구조, 200% 확대, 모션 감소, A4 인쇄 검증 완료' },
   { date: '2026-08-26', category: '개발', summary: 'MVP 4개 사건, 근거 분류, 교차 조사, 관점 전환, 접근성 기능 추가' },

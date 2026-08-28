@@ -139,23 +139,6 @@
   .teacher-guide__narrators { grid-template-columns: 1fr; }
 }
 
-@media (max-width: 420px) {
-  .utility-group {
-    left: max(0.5rem, env(safe-area-inset-left));
-    right: max(0.5rem, env(safe-area-inset-right));
-    width: auto;
-    max-width: none;
-  }
-
-  .utility-button {
-    flex: 1 1 0;
-    min-width: 0;
-    max-width: none;
-    white-space: nowrap;
-    text-align: center;
-  }
-}
-
 @page {
   size: A4 portrait;
   margin: 12mm;

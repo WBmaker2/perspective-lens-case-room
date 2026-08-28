@@ -26,9 +26,8 @@ describe('narrow viewport layout contract', () => {
 
   it('keeps the final print stylesheet cascade aligned with mobile utility layout', () => {
     expect(mainTsx.indexOf("import './styles/layout.css';")).toBeLessThan(mainTsx.indexOf("import './styles/print.css';"));
-    const printMobileMedia = printCss.match(/@media \(max-width: 420px\) \{([\s\S]*?)\n\}/)?.[1] ?? '';
-    expect(printMobileMedia).toMatch(/\.utility-group\s*\{[\s\S]*left:\s*max\(0\.5rem,\s*env\(safe-area-inset-left\)\);[\s\S]*right:\s*max\(0\.5rem,\s*env\(safe-area-inset-right\)\);[\s\S]*width:\s*auto;[\s\S]*max-width:\s*none;/);
-    expect(printMobileMedia).toMatch(/\.utility-button\s*\{[\s\S]*flex:\s*1 1 0;[\s\S]*min-width:\s*0;[\s\S]*max-width:\s*none;[\s\S]*white-space:\s*nowrap;/);
+    expect(printCss).not.toMatch(/@media \(max-width: 420px\)\s*\{[\s\S]*\.utility-group/);
+    expect(printCss).not.toMatch(/@media \(max-width: 420px\)\s*\{[\s\S]*\.utility-button/);
     const printMedia = printCss.slice(printCss.indexOf('@media print'));
     expect(printMedia).toMatch(/\.utility-group[\s\S]*display:\s*none\s*!important;/);
   });
