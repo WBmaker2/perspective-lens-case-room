@@ -124,9 +124,11 @@ async function driveFlow(page: Page, checkStage: (stage: string) => Promise<void
   await checkStage('lenses');
   const tabs = page.getByRole('tab');
   await press(page.getByRole('button', { name: '읽음 표시', exact: true }).nth(0));
+  await expect(page.getByRole('button', { name: '읽음 취소', exact: true }).first()).toBeVisible();
   await press(tabs.nth(1));
   await press(page.getByRole('button', { name: '읽음 표시', exact: true }).nth(0));
   await press(page.getByRole('button', { name: '중요 문장 표시', exact: true }).nth(0));
+  await expect(page.getByRole('button', { name: '중요 표시 취소', exact: true }).first()).toBeVisible();
   await press(tabs.nth(0));
   await press(page.getByRole('button', { name: '중요 문장 표시', exact: true }).nth(0));
   await press(page.getByRole('button', { name: '근거 보드로 이동', exact: true }));

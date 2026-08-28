@@ -83,6 +83,9 @@ test('keeps requests local and storage within the three-key privacy whitelist', 
   await page.goto('/');
   await page.evaluate(() => { sessionStorage.clear(); localStorage.clear(); });
   await page.reload();
+  const favicon = await page.request.get(new URL('favicon.svg', page.url()).toString());
+  expect(favicon.status()).toBe(200);
+  expect(favicon.headers()['content-type']).toMatch(/image\/svg\+xml/i);
   await expect(page.locator('input[type="file"]')).toHaveCount(0);
   await expect(page.locator('input[name*="name" i], input[name*="identity" i]')).toHaveCount(0);
   await expect(page.locator('main')).not.toContainText(/학생 이름|사용자 이름|이름을 입력|실제 갈등/);

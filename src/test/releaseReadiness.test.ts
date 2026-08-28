@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest';
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const readme = readFileSync(resolve(repoRoot, 'README.md'), 'utf8');
 const checklist = readFileSync(resolve(repoRoot, 'docs/qa/manual-accessibility-checklist.md'), 'utf8');
+const index = readFileSync(resolve(repoRoot, 'index.html'), 'utf8');
 
 describe('local release-readiness packet', () => {
   it('documents the app, boundaries, local commands, and exact evidence paths', () => {
@@ -25,9 +26,13 @@ describe('local release-readiness packet', () => {
     for (const boundary of ['서버 없음', 'AI 없음', '분석/추적 없음', 'GitHub Pages', '.github/workflows/pages.yml']) {
       expect(readme).toContain(boundary);
     }
-    for (const check of ['375px', '200%', '키보드만', 'VoiceOver', '모션 감소', 'A4']) {
+    for (const check of ['375px', '640px', '200%', 'keyboard-only', 'ARIA/axe', '모션 감소', 'A4']) {
       expect(readme).toContain(check);
     }
+    expect(readme).toContain('[관점 렌즈 사건실 HVC 결과](https://wbmaker2.github.io/perspective-lens-case-room/)');
+    expect(readme).toContain('VoiceOver 검증 제외');
+    expect(readme).toContain('favicon.svg');
+    expect(index).toContain('href="./favicon.svg"');
     for (const path of [
       'docs/qa/evidence/375-intake.png',
       'docs/qa/evidence/375-evidence.png',
@@ -49,7 +54,7 @@ describe('local release-readiness packet', () => {
     const rows = checklist.match(/^\s*- \[[ xX]\] /gm) ?? [];
     expect(rows).toHaveLength(12);
     for (const item of [
-      'Command+F5',
+      '포커스 표시·44px 조작 영역',
       '랜드마크',
       '렌즈 탭',
       '문장 번호',
@@ -68,6 +73,9 @@ describe('local release-readiness packet', () => {
     expect(checklist).toMatch(/(Chrome|Safari|Firefox) [0-9]+/);
     expect(checklist).toMatch(/macOS [0-9]+/);
     expect(checklist).toMatch(/PASS/);
+    expect(checklist).toContain('VoiceOver 검증 제외');
+    expect(checklist).not.toMatch(/^\s*- \[[ xX]\].*VoiceOver/m);
+    expect(checklist).toContain('포커스 표시·44px 조작 영역');
     expect(checklist).not.toMatch(/TBD|TODO|작성 예정|____/i);
   });
 });

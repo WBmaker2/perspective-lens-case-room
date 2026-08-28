@@ -23,6 +23,10 @@ npm ci
 
 `https://WBmaker2.github.io/perspective-lens-case-room/`
 
+[관점 렌즈 사건실 HVC 결과](https://wbmaker2.github.io/perspective-lens-case-room/)
+
+상대 경로 `favicon.svg`를 포함한 정적 파일은 저장소 하위 경로에서도 같은 방식으로 불러옵니다.
+
 배포 후에는 Actions의 `Deploy to GitHub Pages` 실행 성공, 위 공개 주소의 문서 제목·정적 asset, 375px 학습 시작 흐름을 각각 확인합니다. 공개 주소가 아직 이전 빌드를 보이면 Actions 완료 후 새로고침하여 현재 커밋의 제목과 asset hash를 다시 확인합니다.
 
 ## 범위와 경계
@@ -55,7 +59,7 @@ npm ci
 
 ## 접근성·반응형 확인 범위
 
-키보드만으로 전체 흐름을 완료하고, VoiceOver 구조와 포커스 반환을 확인합니다. 375px 모바일 및 640px CSS 뷰포트에서 무수평스크롤을 확인하고, 브라우저 200% 확대와 모션 감소(`Reduce Motion`)에서 현재 행동 안내를 확인합니다. A4 인쇄 미리보기에서는 교사용 요약·두 렌즈·완료 보고서가 잘리지 않아야 합니다.
+이번 확인 범위는 375px·640px CSS 뷰포트, 200% 확대, keyboard-only 전체 흐름, ARIA/axe 구조, reduced motion, A4 print 미리보기입니다. 모바일 무수평스크롤·44px 조작 영역·포커스 반환과 현재 행동 안내를 함께 확인합니다. 이번 개선 범위에서는 VoiceOver 검증 제외이며, 보조공학 완료를 의미하지 않습니다.
 
 시각 증거 파일:
 
@@ -77,4 +81,4 @@ npm ci
 | 정적 품질 | `npm run lint`, `npm run lint:filesize` | ESLint와 500줄 미만 파일 |
 | 빌드 | `npm run build` | 배포 산출물 생성 |
 | 브라우저 | `npm run test:e2e` | 네 사건, 키보드, 접근성, 반응형, 개인정보, 인쇄 |
-| 수동 | `docs/qa/manual-accessibility-checklist.md` | VoiceOver, 확대, 모션 감소, A4 포함 12개 항목 |
+| 수동 | `docs/qa/manual-accessibility-checklist.md` | VoiceOver 검증 제외, 확대, 모션 감소, A4 포함 12개 항목 |
