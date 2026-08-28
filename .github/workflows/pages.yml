@@ -37,6 +37,10 @@ jobs:
         run: npm run lint:filesize
       - name: Build production bundle
         run: npm run build
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Run Playwright E2E
+        run: npx playwright test
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:

@@ -17,6 +17,19 @@ npm ci
 
 개발 서버는 기본적으로 `http://127.0.0.1:5173`에서 실행됩니다. 배포는 아래 GitHub Pages workflow를 통해 수행합니다.
 
+## 브라우저 CI 실행 경로
+
+GitHub Actions의 Ubuntu `Playwright E2E` workflow가 정식 Chromium/E2E 검증 환경입니다. `main` Pages 배포도 build job에서 같은 E2E 단계를 통과한 뒤에만 artifact를 올리고, 배포 job을 시작합니다.
+
+Codex macOS 샌드박스에서 Chromium 실행 시 `MachPortRendezvousServer` 또는 `Permission denied (1100)`이 발생하면 이는 학습자 흐름의 결과가 아니라 실행 환경의 권한 제한입니다. 이 경우 외부 Terminal/iTerm에서 다음 명령을 실행하거나 Ubuntu CI 결과를 확인합니다.
+
+```bash
+cd "/Volumes/ External Drive 256G/Dev2/codex/perspective-lens-case-room"
+npx playwright test --workers=1
+```
+
+로컬 Vite 서버의 4173 포트가 이미 사용 중이면 먼저 해당 포트를 사용하는 알려진 Vite 프로세스를 확인하거나 비어 있는 포트로 실행합니다. 관련 없는 애플리케이션을 종료하거나 광범위한 캐시를 삭제하지 않습니다.
+
 ## GitHub Pages 배포
 
 `main`에 푸시하면 `.github/workflows/pages.yml`이 `npm ci`와 품질 검사를 통과한 `dist/`를 GitHub Pages에 배포합니다. 저장소 Pages 설정의 소스는 `GitHub Actions`로 둡니다. 프로젝트 저장소 주소는 다음 규칙을 따릅니다.
