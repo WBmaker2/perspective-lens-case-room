@@ -70,7 +70,7 @@ function LensPanel({
           aria-pressed={isRead}
           onClick={() => onMarkRead(lens.id)}
         >
-          읽음 표시
+          {isRead ? '읽음 취소' : '읽음 표시'}
         </button>
       </header>
       <ol className="narrative-list" aria-label={`${lens.displayName} 서술 문장`}>
@@ -83,6 +83,7 @@ function LensPanel({
                 mode="mark-important"
                 pressed={marked}
                 onToggle={onToggleImportantSentence}
+                contextLabel={lens.displayName}
               />
             </li>
           );

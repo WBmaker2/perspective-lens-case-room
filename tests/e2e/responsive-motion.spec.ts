@@ -1,5 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { casePacks } from '../../src/content/caseIndex';
+import { sentenceReference } from '../../src/content/learnerLabels';
 import type { EvidenceCategory } from '../../src/model/case';
 
 const pack = casePacks.find((item) => item.id === 'club-notice-poster')!;
@@ -66,7 +67,7 @@ async function resetAndSelect(page: Page) {
 
 async function completeEvidence(page: Page, startIndex = 0) {
   const sentences = pack.narrators.flatMap((narrator) => narrator.sentences);
-  const buttons = page.getByRole('button', { name: /^문장 \d+/ });
+  const buttons = page.getByRole('button', { name: /문장 \d+$/ });
   for (const [index, sentence] of sentences.entries()) {
     if (index < startIndex) continue;
     await press(buttons.nth(index));
@@ -86,7 +87,7 @@ async function completeComparison(page: Page) {
     return { keyName, validFor, groupName, option };
   });
   for (const { groupName, option } of chosen) await press(page.getByRole('group', { name: groupName }).getByRole('checkbox', { name: option.label, exact: true }), 'Space');
-  for (const sentenceId of new Set(chosen.flatMap(({ option }) => option.evidenceSentenceIds))) await press(page.getByRole('checkbox', { name: new RegExp(`근거 문장.*${sentenceId}`) }), 'Space');
+  for (const sentenceId of new Set(chosen.flatMap(({ option }) => option.evidenceSentenceIds))) await press(page.getByRole('checkbox', { name: new RegExp(`근거 문장.*${sentenceReference(pack, sentenceId)}`) }), 'Space');
   await press(page.getByRole('button', { name: '비교 완료', exact: true }));
   await press(page.getByRole('button', { name: '추가 기록 열기', exact: true }));
   const changed = chosen.map((item) => ({
@@ -98,10 +99,10 @@ async function completeComparison(page: Page) {
   await press(changedGroup.getByRole('checkbox', { name: changed.option.label, exact: true }), 'Space');
   await press(changedGroup.getByRole('checkbox', { name: changed.alternate.label, exact: true }), 'Space');
   for (const sentenceId of new Set(changed.alternate.evidenceSentenceIds)) {
-    const checkbox = page.getByRole('checkbox', { name: new RegExp(`근거 문장.*${sentenceId}`) });
+    const checkbox = page.getByRole('checkbox', { name: new RegExp(`근거 문장.*${sentenceReference(pack, sentenceId)}`) });
     if (!(await checkbox.isChecked())) await press(checkbox, 'Space');
   }
-  await press(page.getByRole('checkbox', { name: new RegExp(`이유 문장.*${pack.narrators[0].sentences[0]!.id}`) }), 'Space');
+  await press(page.getByRole('checkbox', { name: new RegExp(`이유 문장.*${sentenceReference(pack, pack.narrators[0].sentences[0]!.id)}`) }), 'Space');
   await press(page.getByRole('button', { name: '수정 비교 완료', exact: true }));
   await press(page.getByRole('button', { name: '관점 전환 시작', exact: true }));
 }
@@ -176,7 +177,7 @@ test('reduced motion replaces every required-action aura with static guidance', 
   await assertReducedAction(page, '근거 보드로 이동');
   await press(page.getByRole('button', { name: '근거 보드로 이동', exact: true }));
   const first = pack.narrators[0].sentences[0]!;
-  await press(page.getByRole('button', { name: /^문장 1/ }).first());
+  await press(page.getByRole('button', { name: /문장 1$/ }).first());
   for (const category of [...new Set(first.acceptedCategorySets[0] ?? [])]) await press(page.getByRole('button', { name: categories[category], exact: true }));
   await assertReducedAction(page, '근거 표시하기');
   await press(page.getByRole('button', { name: '근거 표시하기', exact: true }));
@@ -188,7 +189,7 @@ test('reduced motion replaces every required-action aura with static guidance', 
     return { keyName, validFor, groupName, option };
   });
   for (const { groupName, option } of chosen) await press(page.getByRole('group', { name: groupName }).getByRole('checkbox', { name: option.label, exact: true }), 'Space');
-  for (const sentenceId of new Set(chosen.flatMap(({ option }) => option.evidenceSentenceIds))) await press(page.getByRole('checkbox', { name: new RegExp(`근거 문장.*${sentenceId}`) }), 'Space');
+  for (const sentenceId of new Set(chosen.flatMap(({ option }) => option.evidenceSentenceIds))) await press(page.getByRole('checkbox', { name: new RegExp(`근거 문장.*${sentenceReference(pack, sentenceId)}`) }), 'Space');
   await assertReducedAction(page, '비교 완료');
   await press(page.getByRole('button', { name: '비교 완료', exact: true }));
   await assertReducedAction(page, '추가 기록 열기');
@@ -202,10 +203,10 @@ test('reduced motion replaces every required-action aura with static guidance', 
   await press(changedGroup.getByRole('checkbox', { name: changed.option.label, exact: true }), 'Space');
   await press(changedGroup.getByRole('checkbox', { name: changed.alternate.label, exact: true }), 'Space');
   for (const sentenceId of new Set(changed.alternate.evidenceSentenceIds)) {
-    const checkbox = page.getByRole('checkbox', { name: new RegExp(`근거 문장.*${sentenceId}`) });
+    const checkbox = page.getByRole('checkbox', { name: new RegExp(`근거 문장.*${sentenceReference(pack, sentenceId)}`) });
     if (!(await checkbox.isChecked())) await press(checkbox, 'Space');
   }
-  await press(page.getByRole('checkbox', { name: new RegExp(`이유 문장.*${pack.narrators[0].sentences[0]!.id}`) }), 'Space');
+  await press(page.getByRole('checkbox', { name: new RegExp(`이유 문장.*${sentenceReference(pack, pack.narrators[0].sentences[0]!.id)}`) }), 'Space');
   await assertReducedAction(page, '수정 비교 완료');
   await press(page.getByRole('button', { name: '수정 비교 완료', exact: true }));
   await assertReducedAction(page, '관점 전환 시작');

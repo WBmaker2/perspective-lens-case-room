@@ -1,5 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { casePacks } from '../../src/content/caseIndex';
+import { sentenceReference } from '../../src/content/learnerLabels';
 import type { CaseId, CasePack, EvidenceCategory } from '../../src/model/case';
 
 const CASE_IDS: readonly CaseId[] = [
@@ -50,7 +51,7 @@ async function selectRadio(page: Page, name: string | RegExp) {
 
 export async function completeEvidenceWithKeyboard(page: Page, pack: CasePack) {
   const allSentences = pack.narrators.flatMap((narrator) => narrator.sentences);
-  const sentenceButtons = page.getByRole('button', { name: /^문장 \d+/ });
+  const sentenceButtons = page.getByRole('button', { name: /문장 \d+$/ });
   await expect(sentenceButtons).toHaveCount(allSentences.length);
   for (const [index, sentence] of allSentences.entries()) {
     await press(sentenceButtons.nth(index));
@@ -125,7 +126,7 @@ export async function chooseComparison(page: Page, pack: CasePack, selection: Dr
     Object.values(selection).flatMap((ids) => ids.flatMap((id) => pack.comparisonOptions.find((option) => option.id === id)?.evidenceSentenceIds ?? [])),
   );
   for (const sentenceId of requiredSentenceIds) {
-    const reason = page.getByRole('checkbox', { name: new RegExp(`근거 문장.*${sentenceId}`) });
+    const reason = page.getByRole('checkbox', { name: new RegExp(`근거 문장.*${sentenceReference(pack, sentenceId)}`) });
     if (!(await reason.isChecked())) await press(reason, 'Space');
   }
 }
@@ -144,13 +145,13 @@ export async function completeCaseWithKeyboard(page: Page, caseId: CaseId) {
   await press(intakeProceed);
 
   await expect(page.getByRole('heading', { name: '렌즈 A/B' })).toBeVisible();
-  const readButtons = page.getByRole('button', { name: '읽음 표시', exact: true });
-  await expect(readButtons).toHaveCount(2);
-  await press(readButtons.nth(0));
-  await press(readButtons.nth(1));
-  const importantButtons = page.getByRole('button', { name: '중요 문장 표시', exact: true });
-  await press(importantButtons.nth(0));
-  await press(importantButtons.nth(pack.narrators[0].sentences.length));
+  await expect(page.getByRole('button', { name: '읽음 표시', exact: true })).toHaveCount(2);
+  await press(page.getByRole('button', { name: '읽음 표시', exact: true }).nth(0));
+  await press(page.getByRole('button', { name: '읽음 표시', exact: true }).nth(0));
+  await press(page.getByRole('button', { name: '중요 문장 표시', exact: true }).nth(0));
+  await press(page.getByRole('button', { name: '중요 문장 표시', exact: true }).nth(pack.narrators[0].sentences.length - 1));
+  await expect(page.getByRole('button', { name: '읽음 취소', exact: true })).toHaveCount(2);
+  await expect(page.getByRole('button', { name: '중요 표시 취소', exact: true })).toHaveCount(2);
   const lensProceed = page.getByRole('button', { name: '근거 보드로 이동', exact: true });
   await expect(lensProceed).toHaveClass(/gi-pulse/);
   await assertOneCurrentGuidance(page);
@@ -194,7 +195,7 @@ export async function completeCaseWithKeyboard(page: Page, caseId: CaseId) {
   };
   revised[change.key] = [change.to.id];
   await chooseComparison(page, pack, revised);
-  await press(page.getByRole('checkbox', { name: new RegExp(`이유 문장.*${pack.narrators[0].sentences[0].id}`) }), 'Space');
+  await press(page.getByRole('checkbox', { name: new RegExp(`이유 문장.*${sentenceReference(pack, pack.narrators[0].sentences[0].id)}`) }), 'Space');
   const revisionProceed = page.getByRole('button', { name: '수정 비교 완료', exact: true });
   await expect(revisionProceed).toHaveClass(/gi-pulse/);
   await assertOneCurrentGuidance(page);

@@ -1,6 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { casePacks } from '../../src/content/caseIndex';
+import { sentenceReference } from '../../src/content/learnerLabels';
 import type { EvidenceCategory } from '../../src/model/case';
 
 const pack = casePacks.find((item) => item.id === 'missing-umbrella-tag')!;
@@ -44,14 +45,14 @@ async function selectComparison(page: Page) {
   }
   const evidenceIds = new Set(chosen.flatMap(({ option }) => option.evidenceSentenceIds));
   for (const sentenceId of evidenceIds) {
-    await key(page.getByRole('checkbox', { name: new RegExp(`근거 문장.*${sentenceId}`) }), 'Space');
+    await key(page.getByRole('checkbox', { name: new RegExp(`근거 문장.*${sentenceReference(pack, sentenceId)}`) }), 'Space');
   }
   return chosen;
 }
 
 async function completeEvidence(page: Page, startIndex = 0) {
   const sentences = pack.narrators.flatMap((narrator) => narrator.sentences);
-  const sentenceButtons = page.getByRole('button', { name: /^문장 \d+/ });
+  const sentenceButtons = page.getByRole('button', { name: /문장 \d+$/ });
   for (const [index, sentence] of sentences.entries()) {
     if (index < startIndex) continue;
     await key(sentenceButtons.nth(index));
@@ -99,14 +100,14 @@ test('axe, semantics, tabs, announcements, and dialogs cover the full learner pa
 
   await assertStage(page, '근거 보드');
   await noSeriousAxe(page);
-  const firstSentence = page.getByRole('button', { name: /^문장 1/ }).first();
+  const firstSentence = page.getByRole('button', { name: /문장 1$/ }).first();
   await expect(firstSentence).toHaveAttribute('aria-pressed', 'false');
   await key(firstSentence);
   await expect(firstSentence).toHaveAttribute('aria-pressed', 'true');
   for (const category of [...new Set(pack.narrators[0].sentences[0]!.acceptedCategorySets[0] ?? [])]) await key(page.getByRole('button', { name: categories[category], exact: true }));
   await key(page.getByRole('button', { name: '근거 표시하기', exact: true }));
-  await expect(page.getByRole('status').filter({ hasText: /1번 문장/ })).toHaveAttribute('aria-live', 'polite');
-  await expect(page.getByRole('status').filter({ hasText: /1번 문장/ })).toHaveCount(1);
+  await expect(page.locator('[role="status"][data-feedback-sentence]').filter({ hasText: /1번 문장/ })).toHaveAttribute('aria-live', 'polite');
+  await expect(page.locator('[role="status"][data-feedback-sentence]').filter({ hasText: /1번 문장/ })).toHaveCount(1);
   await completeEvidence(page, 1);
   await key(page.getByRole('button', { name: '교차 조사 시작', exact: true }));
 
@@ -127,10 +128,10 @@ test('axe, semantics, tabs, announcements, and dialogs cover the full learner pa
   await key(shared.getByRole('checkbox', { name: changed.label, exact: true }), 'Space');
   const changedEvidence = new Set(changed.evidenceSentenceIds);
   for (const sentenceId of changedEvidence) {
-    const checkbox = page.getByRole('checkbox', { name: new RegExp(`근거 문장.*${sentenceId}`) });
+    const checkbox = page.getByRole('checkbox', { name: new RegExp(`근거 문장.*${sentenceReference(pack, sentenceId)}`) });
     if (!(await checkbox.isChecked())) await key(checkbox, 'Space');
   }
-  await key(page.getByRole('checkbox', { name: new RegExp(`이유 문장.*${pack.narrators[0].sentences[0]!.id}`) }), 'Space');
+  await key(page.getByRole('checkbox', { name: new RegExp(`이유 문장.*${sentenceReference(pack, pack.narrators[0].sentences[0]!.id)}`) }), 'Space');
   await noSeriousAxe(page);
 
   await key(page.getByRole('button', { name: '수정 비교 완료', exact: true }));

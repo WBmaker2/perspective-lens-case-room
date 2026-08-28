@@ -22,7 +22,7 @@ describe('SentenceCard', () => {
     const user = userEvent.setup();
     const onToggle = vi.fn();
     const view = () => (
-      <SentenceCard sentence={mixedSentence} mode="classify-evidence" pressed={false} onToggle={onToggle}>
+      <SentenceCard sentence={mixedSentence} mode="classify-evidence" pressed={false} onToggle={onToggle} contextLabel="해솔">
         <div>
           <label>
             <input type="checkbox" value="sentence-1-a" />
@@ -37,8 +37,8 @@ describe('SentenceCard', () => {
     );
     const { rerender } = render(view());
 
-    expect(screen.getByRole('group', { name: '문장 1' })).toBeInTheDocument();
-    const select = screen.getByRole('button', { name: /문장 1/ });
+    expect(screen.getByRole('group', { name: '해솔 문장 1' })).toBeInTheDocument();
+    const select = screen.getByRole('button', { name: /해솔 문장 1/ });
     expect(select).toHaveAttribute('aria-pressed', 'false');
     expect(screen.queryAllByRole('checkbox')).toHaveLength(0);
 
@@ -46,7 +46,7 @@ describe('SentenceCard', () => {
     expect(onToggle).toHaveBeenCalledWith('sentence-1');
 
     rerender(
-      <SentenceCard sentence={mixedSentence} mode="classify-evidence" pressed onToggle={onToggle}>
+      <SentenceCard sentence={mixedSentence} mode="classify-evidence" pressed onToggle={onToggle} contextLabel="해솔">
         <div>
           <label>
             <input type="checkbox" value="sentence-1-a" />
@@ -76,5 +76,12 @@ describe('SentenceCard', () => {
     marker.focus();
     await user.keyboard('{Enter}');
     expect(onToggle).toHaveBeenCalledWith('sentence-1');
+  });
+
+  it('names a marked sentence as already marked and keeps its narrator context', () => {
+    render(<SentenceCard sentence={mixedSentence} mode="mark-important" pressed onToggle={() => undefined} contextLabel="가람" />);
+
+    expect(screen.getByRole('group', { name: '가람 문장 1' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '중요 표시 취소' })).toHaveAttribute('aria-pressed', 'true');
   });
 });

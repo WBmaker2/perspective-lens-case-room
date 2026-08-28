@@ -1,5 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { casePacks } from '../../src/content/caseIndex';
+import { sentenceReference } from '../../src/content/learnerLabels';
 import type { EvidenceCategory } from '../../src/model/case';
 
 const BASE_ORIGIN = 'http://127.0.0.1:4173';
@@ -23,12 +24,12 @@ async function reachRewrite(page: Page) {
   await press(page.getByRole('radio', { name: /보이는 정보/ }), 'Space');
   await press(page.getByRole('button', { name: '사건 렌즈 열기', exact: true }));
   await press(page.getByRole('button', { name: '읽음 표시', exact: true }).nth(0));
-  await press(page.getByRole('button', { name: '읽음 표시', exact: true }).nth(1));
+  await press(page.getByRole('button', { name: '읽음 표시', exact: true }).nth(0));
   await press(page.getByRole('button', { name: '중요 문장 표시', exact: true }).nth(0));
-  await press(page.getByRole('button', { name: '중요 문장 표시', exact: true }).nth(pack.narrators[0].sentences.length));
+  await press(page.getByRole('button', { name: '중요 문장 표시', exact: true }).nth(pack.narrators[0].sentences.length - 1));
   await press(page.getByRole('button', { name: '근거 보드로 이동', exact: true }));
   const sentences = pack.narrators.flatMap((narrator) => narrator.sentences);
-  const sentenceButtons = page.getByRole('button', { name: /^문장 \d+/ });
+  const sentenceButtons = page.getByRole('button', { name: /문장 \d+$/ });
   for (const [index, sentence] of sentences.entries()) {
     await press(sentenceButtons.nth(index));
     for (const category of [...new Set(sentence.acceptedCategorySets[0] ?? [])]) await press(page.getByRole('button', { name: categoryLabels[category], exact: true }));
@@ -50,7 +51,7 @@ async function reachRewrite(page: Page) {
     return { groupName, option };
   });
   for (const { groupName, option } of chosen) await press(page.getByRole('group', { name: groupName }).getByRole('checkbox', { name: option.label, exact: true }), 'Space');
-  for (const sentenceId of new Set(chosen.flatMap(({ option }) => option.evidenceSentenceIds))) await press(page.getByRole('checkbox', { name: new RegExp(`근거 문장.*${sentenceId}`) }), 'Space');
+  for (const sentenceId of new Set(chosen.flatMap(({ option }) => option.evidenceSentenceIds))) await press(page.getByRole('checkbox', { name: new RegExp(`근거 문장.*${sentenceReference(pack, sentenceId)}`) }), 'Space');
   await press(page.getByRole('button', { name: '비교 완료', exact: true }));
   await press(page.getByRole('button', { name: '추가 기록 열기', exact: true }));
   const changed = pack.comparisonOptions.find((option) => option.validFor.includes('shared-fact') && option.id !== chosen[0]!.option.id)!;
@@ -58,10 +59,10 @@ async function reachRewrite(page: Page) {
   await press(shared.getByRole('checkbox', { name: chosen[0]!.option.label, exact: true }), 'Space');
   await press(shared.getByRole('checkbox', { name: changed.label, exact: true }), 'Space');
   for (const sentenceId of new Set(changed.evidenceSentenceIds)) {
-    const checkbox = page.getByRole('checkbox', { name: new RegExp(`근거 문장.*${sentenceId}`) });
+    const checkbox = page.getByRole('checkbox', { name: new RegExp(`근거 문장.*${sentenceReference(pack, sentenceId)}`) });
     if (!(await checkbox.isChecked())) await press(checkbox, 'Space');
   }
-  await press(page.getByRole('checkbox', { name: new RegExp(`이유 문장.*${pack.narrators[0].sentences[0]!.id}`) }), 'Space');
+  await press(page.getByRole('checkbox', { name: new RegExp(`이유 문장.*${sentenceReference(pack, pack.narrators[0].sentences[0]!.id)}`) }), 'Space');
   await press(page.getByRole('button', { name: '수정 비교 완료', exact: true }));
   await press(page.getByRole('button', { name: '관점 전환 시작', exact: true }));
 }

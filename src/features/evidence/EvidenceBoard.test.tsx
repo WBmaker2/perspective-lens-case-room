@@ -44,6 +44,7 @@ describe('EvidenceBoard', () => {
     const { rerender } = render(view());
 
     expect(screen.getByRole('heading', { name: '근거 보드' })).toBeInTheDocument();
+    expect(screen.getByText('분류 완료 0 / 10')).toBeInTheDocument();
     expect(document.querySelectorAll('.gi-pulse')).toHaveLength(0);
     const firstSentence = screen.getAllByRole('button', { name: /문장 1/ })[0]!;
     firstSentence.focus();
@@ -53,13 +54,14 @@ describe('EvidenceBoard', () => {
     expect(screen.getByRole('button', { name: '근거 표시하기' })).toHaveClass('gi-pulse');
     await user.click(screen.getByRole('button', { name: '근거 표시하기' }));
     rerender(view());
-    expect(screen.getByRole('status')).toHaveTextContent('1번 문장');
+    expect(screen.getByText('분류 완료 1 / 10')).toBeInTheDocument();
+    expect(document.querySelector('[role="status"][data-feedback-sentence]')).toHaveTextContent('1번 문장');
 
     const mixed = playgroundStorageBox.narrators[0].sentences[1]!;
     const mixedButton = screen.getAllByRole('button', { name: new RegExp(`문장 ${mixed.number}`) })[0]!;
     await user.click(mixedButton);
     rerender(view());
-    const mixedGroup = screen.getAllByRole('group', { name: `문장 ${mixed.number}` })[0]!;
+    const mixedGroup = screen.getByRole('group', { name: `해솔 문장 ${mixed.number}` });
     const mixedCheckboxes = within(mixedGroup).getAllByRole('checkbox');
     expect(mixedCheckboxes).toHaveLength(mixed.segments.length);
     expect(screen.getByRole('button', { name: '근거 표시하기' })).toBeDisabled();
@@ -70,7 +72,7 @@ describe('EvidenceBoard', () => {
     expect(screen.getByRole('button', { name: '근거 표시하기' })).toBeEnabled();
     await user.click(screen.getByRole('button', { name: '근거 표시하기' }));
     rerender(view());
-    expect(screen.getByRole('status')).toHaveTextContent(`${mixed.number}번 문장`);
+    expect(document.querySelector('[role="status"][data-feedback-sentence]')).toHaveTextContent(`${mixed.number}번 문장`);
 
     const allSentences = playgroundStorageBox.narrators.flatMap((narrator) => narrator.sentences);
     for (const sentence of allSentences.slice(2)) await submitSupportedSentence(user, sentence);

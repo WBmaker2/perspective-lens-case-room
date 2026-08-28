@@ -15,4 +15,19 @@ describe('narrow viewport layout contract', () => {
     expect(layoutCss).toMatch(/\.utility-button\s*\{[\s\S]*min-width:\s*44px[\s\S]*min-height:\s*44px[\s\S]*cursor:\s*pointer;/);
     expect(narrowMedia).toMatch(/\.utility-button\s*\{[\s\S]*width:\s*100%;/);
   });
+
+  it('keeps each lens narrative item full-width around its SentenceCard', () => {
+    const narrativeRule = layoutCss.match(/\.narrative-sentence\s*\{([^}]*)\}/)?.[1] ?? '';
+    expect(narrativeRule).toMatch(/display:\s*block;/);
+    expect(narrativeRule).toMatch(/min-width:\s*0;/);
+    expect(narrativeRule).not.toMatch(/grid-template-columns|align-items|gap:/);
+
+    const narrowMedia = layoutCss.slice(layoutCss.lastIndexOf('@media (max-width: 480px)'));
+    expect(narrowMedia).not.toMatch(/\.narrative-sentence\s*\{[\s\S]*grid-template-columns/);
+  });
+
+  it('keeps learner progress and setting values visually secondary', () => {
+    expect(layoutCss).toMatch(/\.evidence-progress\s*\{[\s\S]*font-variant-numeric:\s*tabular-nums;/);
+    expect(layoutCss).toMatch(/\.reading-setting-value\s*\{[\s\S]*font-size:\s*0\.72em;/);
+  });
 });

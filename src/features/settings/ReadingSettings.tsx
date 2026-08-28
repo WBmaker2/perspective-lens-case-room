@@ -5,6 +5,23 @@ export interface ReadingSettingsProps {
   onChange: (preferences: ReadingPreferences) => void;
 }
 
+const fontSizeOptions: ReadonlyArray<{ value: ReadingPreferences['fontSize']; label: string; valueLabel: string }> = [
+  { value: 18, label: '작게', valueLabel: '18px' },
+  { value: 20, label: '보통', valueLabel: '20px' },
+  { value: 22, label: '크게', valueLabel: '22px' },
+];
+
+const lineHeightOptions: ReadonlyArray<{ value: ReadingPreferences['lineHeight']; label: string; valueLabel: string }> = [
+  { value: 1.6, label: '촘촘하게', valueLabel: '1.6' },
+  { value: 1.8, label: '넉넉하게', valueLabel: '1.8' },
+  { value: 2, label: '아주 넉넉하게', valueLabel: '2' },
+];
+
+const readingWidthOptions: ReadonlyArray<{ value: ReadingPreferences['readingWidth']; label: string }> = [
+  { value: 'narrow', label: '좁은 읽기 폭' },
+  { value: 'standard', label: '표준 읽기 폭' },
+];
+
 export function ReadingSettings({ preferences, onChange }: ReadingSettingsProps) {
   return (
     <section className="reading-settings" aria-labelledby="reading-settings-title">
@@ -12,20 +29,29 @@ export function ReadingSettings({ preferences, onChange }: ReadingSettingsProps)
       <p className="reading-settings__intro">글자와 줄 간격을 바꾸면 이 탭의 읽기 화면에 바로 적용됩니다.</p>
       <fieldset>
         <legend>글자 크기</legend>
-        <label><input type="radio" name="reading-font-size" value="18" checked={preferences.fontSize === 18} onChange={() => onChange({ ...preferences, fontSize: 18 })} />18px</label>
-        <label><input type="radio" name="reading-font-size" value="20" checked={preferences.fontSize === 20} onChange={() => onChange({ ...preferences, fontSize: 20 })} />20px</label>
-        <label><input type="radio" name="reading-font-size" value="22" checked={preferences.fontSize === 22} onChange={() => onChange({ ...preferences, fontSize: 22 })} />22px</label>
+        {fontSizeOptions.map((option) => (
+          <label key={option.value}>
+            <input type="radio" name="reading-font-size" value={option.value} checked={preferences.fontSize === option.value} onChange={() => onChange({ ...preferences, fontSize: option.value })} />
+            <span>{option.label}</span><small className="reading-setting-value">{option.valueLabel}</small>
+          </label>
+        ))}
       </fieldset>
       <fieldset>
         <legend>줄 간격</legend>
-        <label><input type="radio" name="reading-line-height" value="1.6" checked={preferences.lineHeight === 1.6} onChange={() => onChange({ ...preferences, lineHeight: 1.6 })} />1.6</label>
-        <label><input type="radio" name="reading-line-height" value="1.8" checked={preferences.lineHeight === 1.8} onChange={() => onChange({ ...preferences, lineHeight: 1.8 })} />1.8</label>
-        <label><input type="radio" name="reading-line-height" value="2" checked={preferences.lineHeight === 2} onChange={() => onChange({ ...preferences, lineHeight: 2 })} />2</label>
+        {lineHeightOptions.map((option) => (
+          <label key={option.value}>
+            <input type="radio" name="reading-line-height" value={option.value} checked={preferences.lineHeight === option.value} onChange={() => onChange({ ...preferences, lineHeight: option.value })} />
+            <span>{option.label}</span><small className="reading-setting-value">{option.valueLabel}</small>
+          </label>
+        ))}
       </fieldset>
       <fieldset>
         <legend>읽기 폭</legend>
-        <label><input type="radio" name="reading-width" value="narrow" checked={preferences.readingWidth === 'narrow'} onChange={() => onChange({ ...preferences, readingWidth: 'narrow' })} />좁은 읽기 폭</label>
-        <label><input type="radio" name="reading-width" value="standard" checked={preferences.readingWidth === 'standard'} onChange={() => onChange({ ...preferences, readingWidth: 'standard' })} />표준 읽기 폭</label>
+        {readingWidthOptions.map((option) => (
+          <label key={option.value}>
+            <input type="radio" name="reading-width" value={option.value} checked={preferences.readingWidth === option.value} onChange={() => onChange({ ...preferences, readingWidth: option.value })} />{option.label}
+          </label>
+        ))}
       </fieldset>
     </section>
   );

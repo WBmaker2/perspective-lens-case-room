@@ -117,6 +117,8 @@ button:focus-visible, input:focus-visible, [tabindex="-1"]:focus-visible {
 .progress__number { color: var(--color-orange-dark); font-variant-numeric: tabular-nums; font-size: 0.68rem; font-weight: 800; }
 
 .stage-content { min-width: 0; }
+.evidence-progress { color: var(--color-navy); font-weight: 800; font-variant-numeric: tabular-nums; }
+.reading-setting-value { color: var(--color-muted); font-size: 0.72em; font-variant-numeric: tabular-nums; }
 .stage-heading-block { max-width: 45rem; margin-bottom: 2rem; }
 .stage-heading-block h1 { margin: 0; color: var(--color-navy); font-size: clamp(2rem, 5vw, 3rem); letter-spacing: -0.045em; }
 .lead { margin: 0.85rem 0 0; color: var(--color-muted); font-size: var(--reading-size); line-height: var(--reading-line-height); }
@@ -187,7 +189,7 @@ button:focus-visible, input:focus-visible, [tabindex="-1"]:focus-visible {
 .read-toggle, .important-toggle { min-width: 44px; min-height: 44px; border: 1px solid var(--color-line); border-radius: 999px; background: transparent; color: var(--color-navy); padding: 0.45rem 0.65rem; font-size: 0.76rem; font-weight: 700; cursor: pointer; }
 .read-toggle.is-read, .important-toggle[aria-pressed="true"] { border-color: var(--color-teal-dark); background: #e5f3f0; color: var(--color-teal-dark); }
 .narrative-list { display: grid; gap: 0.5rem; margin: 1rem 0 0; padding: 0; list-style: none; }
-.narrative-sentence { display: grid; grid-template-columns: 1.4rem minmax(0, 1fr) auto; align-items: center; gap: 0.55rem; border-bottom: 1px solid var(--color-soft); padding: 0.55rem 0; }
+.narrative-sentence { display: block; min-width: 0; border-bottom: 1px solid var(--color-soft); padding: 0.55rem 0; }
 .narrative-sentence__number { align-self: start; color: var(--color-orange-dark); font-size: 0.74rem; font-weight: 800; }
 .narrative-sentence p { margin: 0; color: var(--color-navy); font-size: var(--reading-size, 18px); line-height: var(--reading-line-height, 1.6); }
 .narrative-sentence.is-marked p { font-weight: 700; }
@@ -225,7 +227,6 @@ button:focus-visible, input:focus-visible, [tabindex="-1"]:focus-visible {
   .lens-identity { grid-template-columns: 3rem minmax(0, 1fr); }
   .lens-identity__icon { width: 3rem; height: 3rem; }
   .read-toggle { grid-column: 1 / -1; justify-self: start; }
-  .narrative-sentence { grid-template-columns: 1.4rem minmax(0, 1fr); }
   .important-toggle { grid-column: 2; justify-self: start; }
 }
 

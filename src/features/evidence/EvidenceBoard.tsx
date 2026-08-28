@@ -3,6 +3,7 @@ import { evaluateEvidenceSelection } from '../../domain/evaluateEvidence';
 import { FeedbackPanel } from '../../components/FeedbackPanel';
 import { SentenceCard } from '../../components/SentenceCard';
 import { StageActionButton } from '../../components/StageActionButton';
+import { sentenceOwner } from '../../content/learnerLabels';
 import type { CasePack, EvidenceCategory, NarrativeSentence } from '../../model/case';
 import type { EvidenceFeedback } from '../../model/feedback';
 import type { EvidenceSelection } from '../../model/session';
@@ -82,6 +83,7 @@ function CategoryChoices({ categoryIds, onToggle }: {
 
 export function EvidenceBoard({ pack, selections, onRecord, onContinue }: EvidenceBoardProps) {
   const sentences = useMemo(() => allSentences(pack), [pack]);
+  const sentenceOwners = useMemo(() => new Map(sentences.map((sentence) => [sentence.id, sentenceOwner(pack, sentence)])), [pack, sentences]);
   const [activeSentenceId, setActiveSentenceId] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<Readonly<Record<string, Draft>>>({});
   const [localSelections, setLocalSelections] = useState<Readonly<Record<string, EvidenceSelection>>>({});
@@ -107,6 +109,7 @@ export function EvidenceBoard({ pack, selections, onRecord, onContinue }: Eviden
     (activeSentence.kind !== 'mixed' || activeSentence.segments.every((segment) => activeDraft.selectedSegmentIds.includes(segment.id))),
   );
   const complete = sentences.length > 0 && sentences.every((sentence) => selectionIsSupported(sentence, effectiveSelections[sentence.id]));
+  const supportedCount = sentences.filter((sentence) => selectionIsSupported(sentence, effectiveSelections[sentence.id])).length;
 
   const setDraft = (sentenceId: string, next: Draft) => {
     setDrafts((current) => ({ ...current, [sentenceId]: next }));
@@ -179,12 +182,14 @@ export function EvidenceBoard({ pack, selections, onRecord, onContinue }: Eviden
       </div>
 
       <div className="evidence-board__legend" aria-label="근거 분류 안내">
-        <span>10개 문장</span>
+        <span className="evidence-progress" role="status" aria-live="polite">분류 완료 {supportedCount} / {sentences.length}</span>
+        <span className="evidence-total" aria-hidden="true">10개 문장</span>
         <span>혼합 문장은 문장 부분을 모두 선택</span>
       </div>
       <ol className="evidence-list" aria-label="분류할 근거 문장">
         {sentences.map((sentence) => {
           const pressed = sentence.id === activeSentence?.id;
+          const contextLabel = sentenceOwners.get(sentence.id);
           const saved = effectiveSelections[sentence.id];
           const savedFeedback: EvidenceFeedback | null = saved
             ? evaluateEvidenceSelection(sentence, saved)
@@ -192,7 +197,7 @@ export function EvidenceBoard({ pack, selections, onRecord, onContinue }: Eviden
           const isLatestFeedback = latestFeedback?.sentenceId === sentence.id;
           return (
             <li className={`evidence-list__item${pressed ? ' is-active' : ''}`} key={sentence.id}>
-              <SentenceCard sentence={sentence} mode="classify-evidence" pressed={pressed} onToggle={selectSentence}>
+              <SentenceCard sentence={sentence} mode="classify-evidence" pressed={pressed} onToggle={selectSentence} {...(contextLabel ? { contextLabel } : {})}>
                 {cardDetails(sentence)}
               </SentenceCard>
               {savedFeedback ? <FeedbackPanel ref={isLatestFeedback ? feedbackRef : undefined} feedback={savedFeedback} live={isLatestFeedback} /> : null}
