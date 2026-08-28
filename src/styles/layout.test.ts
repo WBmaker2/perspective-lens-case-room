@@ -16,6 +16,12 @@ describe('narrow viewport layout contract', () => {
     expect(narrowMedia).toMatch(/\.utility-button\s*\{[\s\S]*width:\s*100%;/);
   });
 
+  it('keeps narrow fixed utilities in one stable row beside current actions', () => {
+    const mobileMedia = layoutCss.match(/@media \(max-width: 600px\) \{([\s\S]*?)\n\}/)?.[1] ?? '';
+    expect(mobileMedia).toMatch(/\.utility-group\s*\{[\s\S]*left:\s*max\(0\.5rem,\s*env\(safe-area-inset-left\)\);[\s\S]*right:\s*max\(0\.5rem,\s*env\(safe-area-inset-right\)\);[\s\S]*width:\s*auto;[\s\S]*max-width:\s*none;/);
+    expect(mobileMedia).toMatch(/\.utility-button\s*\{[\s\S]*flex:\s*1 1 0;[\s\S]*min-width:\s*0;[\s\S]*white-space:\s*nowrap;/);
+  });
+
   it('keeps each lens narrative item full-width around its SentenceCard', () => {
     const narrativeRule = layoutCss.match(/\.narrative-sentence\s*\{([^}]*)\}/)?.[1] ?? '';
     expect(narrativeRule).toMatch(/display:\s*block;/);

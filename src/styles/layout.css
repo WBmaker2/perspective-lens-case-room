@@ -221,6 +221,20 @@ button:focus-visible, input:focus-visible, [tabindex="-1"]:focus-visible {
   .lens-panel[data-active="false"] { display: block; }
 }
 
+@media (max-width: 600px) {
+  .utility-group {
+    left: max(0.5rem, env(safe-area-inset-left));
+    right: max(0.5rem, env(safe-area-inset-right));
+    width: auto;
+    max-width: none;
+  }
+  .utility-button {
+    flex: 1 1 0;
+    min-width: 0;
+    white-space: nowrap;
+  }
+}
+
 @media (max-width: 480px) {
   .app-shell { padding-inline: 0.85rem; }
   .case-picker__list, .hypothesis__options { grid-template-columns: 1fr; }
