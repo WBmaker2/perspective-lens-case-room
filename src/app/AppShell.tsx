@@ -15,6 +15,7 @@ import { ReadingSettings } from '../features/settings/ReadingSettings';
 import { UpdateHistoryDialog } from '../features/updates/UpdateHistoryDialog';
 import { TeacherGuide } from '../features/teacher/TeacherGuide';
 import { ProgressSteps } from '../components/ProgressSteps';
+import { StageStatus } from '../components/StageStatus';
 import { StageRenderer } from './StageRenderer';
 import { useCaseSession } from './useCaseSession';
 import { useStageFocus } from './useStageFocus';
@@ -118,23 +119,26 @@ export function AppShell({ storage, persistentStorage, localStorage: injectedLoc
   } as CSSProperties;
 
   return (
-    <main className="app-shell" style={readingStyle}>
-      <header className="app-header">
-        <div className="app-header__brand">
-          <span className="brand-mark" aria-hidden="true">PL</span>
-          <div>
-            <p className="eyebrow">KOREAN READING LAB</p>
-            <h1 className="app-header__title">관점 렌즈 사건실</h1>
+    <main className="app-shell" data-active-stage={viewModel.session.stage} style={readingStyle}>
+      <div className="app-shell__topbar">
+        <header className="app-header">
+          <div className="app-header__brand">
+            <span className="brand-mark" aria-hidden="true">PL</span>
+            <div>
+              <p className="eyebrow">KOREAN READING LAB</p>
+              <h1 className="app-header__title">관점 렌즈 사건실</h1>
+            </div>
           </div>
-        </div>
-        <p className="app-header__safety">{safetyCopy.fictionalCase}</p>
-      </header>
+          <p className="app-header__safety">{safetyCopy.fictionalCase}</p>
+        </header>
+        <ProgressSteps activeStage={viewModel.session.stage} />
+      </div>
 
       <div className="app-shell__orientation">
         <p>같은 사건도 말하는 사람의 위치와 관심에 따라 다르게 보일 수 있습니다.</p>
         <p>모든 사건과 인물은 가상이며 실제 인물을 평가하는 도구가 아닙니다.</p>
       </div>
-      <ProgressSteps activeStage={viewModel.session.stage} />
+      <StageStatus activeStage={viewModel.session.stage} {...(selectedPack ? { caseTitle: selectedPack.title } : {})} />
       {persistenceWarning && <p className="persistence-warning" role="status">{persistenceWarning}</p>}
       <StageRenderer
         casePacks={casePacks}

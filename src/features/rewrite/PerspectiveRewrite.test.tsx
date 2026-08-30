@@ -44,22 +44,22 @@ describe('PerspectiveRewrite', () => {
     const placeItem = available.querySelector('[data-block-id="cnp-block-place-a"]');
     expect(dateItem).not.toBeNull();
     expect(placeItem).not.toBeNull();
-    const dateAdd = within(dateItem as HTMLElement).getByRole('button', { name: /블록 넣기.*cnp-block-date-a/ });
+    const dateAdd = within(dateItem as HTMLElement).getByRole('button', { name: '블록 넣기: 이번 주 금요일인 2026년 8월 28일 방과 후에 모인다.' });
     dateAdd.focus();
     await user.keyboard('{Enter}');
-    await user.click(within(placeItem as HTMLElement).getByRole('button', { name: /블록 넣기.*cnp-block-place-a/ }));
+    await user.click(within(placeItem as HTMLElement).getByRole('button', { name: '블록 넣기: 모임 장소는 과학실이다.' }));
 
     const assembled = screen.getByRole('list', { name: '조립한 블록' });
     expect(assembled.textContent).toMatch(/금요일/);
     const assembledPlace = assembled.querySelector('[data-block-id="cnp-block-place-a"]');
     expect(assembledPlace).not.toBeNull();
-    await user.click(within(assembledPlace as HTMLElement).getByRole('button', { name: /위로 이동.*cnp-block-place-a/ }));
+    await user.click(within(assembledPlace as HTMLElement).getByRole('button', { name: '위로 이동: 모임 장소는 과학실이다.' }));
     expect([...assembled.querySelectorAll('li')].map((item) => item.getAttribute('data-block-id'))).toEqual([
       'cnp-block-place-a', 'cnp-block-date-a',
     ]);
     const movedPlace = assembled.querySelector('[data-block-id="cnp-block-place-a"]');
     expect(movedPlace).not.toBeNull();
-    await user.click(within(movedPlace as HTMLElement).getByRole('button', { name: /블록 빼기.*cnp-block-place-a/ }));
+    await user.click(within(movedPlace as HTMLElement).getByRole('button', { name: '블록 빼기: 모임 장소는 과학실이다.' }));
     expect(assembled.querySelector('[data-block-id="cnp-block-place-a"]')).toBeNull();
 
     const missing = draftFor(0, ['cnp-block-date-a']);
@@ -116,7 +116,7 @@ describe('PerspectiveRewrite', () => {
     await user.click(screen.getByRole('radio', { name: '사실 보고' }));
     const available = screen.getByRole('list', { name: '사용 가능한 블록' });
     const add = (blockId: string) => within(available.querySelector(`[data-block-id="${blockId}"]`) as HTMLElement)
-      .getByRole('button', { name: new RegExp(`블록 넣기.*${blockId}`) });
+      .getByRole('button', { name: `블록 넣기: ${clubNoticePoster.rewriteBlocks.find((block) => block.id === blockId)!.text}` });
 
     add('cnp-block-date-a').focus();
     await user.keyboard('{Enter}');
@@ -130,14 +130,14 @@ describe('PerspectiveRewrite', () => {
 
     const assembled = screen.getByRole('list', { name: '조립한 블록' });
     const place = assembled.querySelector('[data-block-id="cnp-block-place-a"]') as HTMLElement;
-    const moveUp = within(place).getByRole('button', { name: /위로 이동.*cnp-block-place-a/ });
+    const moveUp = within(place).getByRole('button', { name: '위로 이동: 모임 장소는 과학실이다.' });
     moveUp.focus();
     await user.keyboard(' ');
     expect(document.activeElement).toHaveAttribute('data-rewrite-action', 'move-down');
     expect(document.activeElement).toHaveAttribute('data-block-id', 'cnp-block-place-a');
 
     const movedPlace = assembled.querySelector('[data-block-id="cnp-block-place-a"]') as HTMLElement;
-    const remove = within(movedPlace).getByRole('button', { name: /블록 빼기.*cnp-block-place-a/ });
+    const remove = within(movedPlace).getByRole('button', { name: '블록 빼기: 모임 장소는 과학실이다.' });
     remove.focus();
     await user.keyboard('{Enter}');
     expect(document.activeElement).toHaveAttribute('data-rewrite-action', 'add');
@@ -158,12 +158,14 @@ describe('PerspectiveRewrite', () => {
     const operationButtons = screen.getAllByRole('button').filter((button) => button.classList.contains('rewrite-operation'));
     expect(operationButtons).toHaveLength(clubNoticePoster.rewriteBlocks.length);
     for (const block of clubNoticePoster.rewriteBlocks) {
-      const button = screen.getByRole('button', { name: new RegExp(`블록 넣기.*${block.id}`) });
+      const button = screen.getByRole('button', { name: `블록 넣기: ${block.text}` });
       expect(button).toHaveAttribute('data-block-id', block.id);
       expect(button).toHaveAttribute('data-rewrite-action', 'add');
       expect(button).toHaveClass('rewrite-operation');
       expect(button).toHaveAttribute('type', 'button');
     }
+    expect(screen.getByRole('list', { name: '사용 가능한 블록' }).textContent).not.toContain('cnp-block-');
+    expect(operationButtons.every((button) => !button.getAttribute('aria-label')?.includes('cnp-block-'))).toBe(true);
   });
 
   it('names the four evaluator-derived feedback rows without score-like language', () => {

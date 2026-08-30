@@ -1,6 +1,6 @@
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--color-paper); color: var(--color-ink); font-family: var(--font-body); }
-main { max-width: 52rem; margin: 0 auto; padding: 3rem 1.25rem; }
+main { width: 100%; max-width: none; margin: 0; padding: 0; }
 
 @media print {
   .utility-group, .utility-warning { display: none !important; }

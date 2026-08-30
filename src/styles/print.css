@@ -62,7 +62,7 @@
 }
 
 .teacher-guide__print-button:hover {
-  background: #fff1eb;
+  background: var(--color-error-surface);
 }
 
 .teacher-guide__selected-case {
@@ -96,7 +96,7 @@
   min-width: 0;
   border: 1px solid var(--color-line);
   border-radius: var(--radius-sm);
-  background: #fffdf8;
+  background: var(--color-surface);
   padding: 0.7rem;
 }
 

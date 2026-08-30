@@ -29,6 +29,24 @@ const submitSupportedSentence = async (user: ReturnType<typeof userEvent.setup>,
 };
 
 describe('EvidenceBoard', () => {
+  it('shows the two-lens rail, live category counts, and an empty evidence tray before classification', () => {
+    render(
+      <EvidenceBoard
+        pack={playgroundStorageBox}
+        selections={{}}
+        onRecord={() => undefined}
+        onContinue={() => undefined}
+      />,
+    );
+
+    expect(screen.getByRole('region', { name: '두 렌즈 요약' })).toBeInTheDocument();
+    for (const lens of playgroundStorageBox.narrators) expect(screen.getByText(`${lens.displayName}의 글`)).toBeInTheDocument();
+    expect(screen.getByRole('complementary', { name: '분류한 근거 요약' })).toHaveTextContent(/관찰 사실\s*0 \/ 10/);
+    expect(screen.getByRole('heading', { name: '문장 카드' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '근거 모음' })).toBeInTheDocument();
+    expect(screen.getByText('아직 모은 문장이 없어요. 문장 카드를 열어 분류해 보세요.')).toBeInTheDocument();
+  });
+
   it('supports keyboard classification, mixed segments, numbered feedback, and the ten-sentence gate', async () => {
     const user = userEvent.setup();
     let selections: Record<string, EvidenceSelection> = {};

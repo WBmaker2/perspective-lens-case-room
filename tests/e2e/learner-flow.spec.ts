@@ -137,7 +137,10 @@ export async function completeCaseWithKeyboard(page: Page, caseId: CaseId) {
   await page.evaluate(() => { sessionStorage.clear(); localStorage.clear(); });
   await page.reload();
   await expect(page.getByRole('heading', { name: '사건 접수' })).toBeVisible();
+  await expect(page.getByRole('complementary', { name: '현재 학습 단계' })).toContainText('현재 단계 1/6');
+  await expect(page.getByRole('button', { name: `${pack.title} 사건 선택 · ${pack.focusQuestion}` })).toBeVisible();
   await press(page.getByRole('button', { name: `${pack.title} 사건 선택` }));
+  await expect(page.getByRole('complementary', { name: '현재 학습 단계' })).toContainText(pack.title);
   await selectRadio(page, /보이는 정보/);
   const intakeProceed = page.getByRole('button', { name: '사건 렌즈 열기', exact: true });
   await expect(intakeProceed).toHaveClass(/gi-pulse/);
@@ -160,8 +163,10 @@ export async function completeCaseWithKeyboard(page: Page, caseId: CaseId) {
   await expect(page.getByRole('heading', { name: '근거 보드' })).toBeVisible();
   await completeEvidenceWithKeyboard(page, pack);
   await expect(page.getByRole('heading', { name: '교차 조사' })).toBeVisible();
+  await expect(page.getByRole('status', { name: '비교 진행률' })).toContainText('비교 항목 0 / 3');
   const initial = firstDraft(pack);
   await chooseComparison(page, pack, initial);
+  await expect(page.getByRole('status', { name: '비교 진행률' })).toContainText('비교 항목 3 / 3');
   const initialProceed = page.getByRole('button', { name: '비교 완료', exact: true });
   await expect(initialProceed).toHaveClass(/gi-pulse/);
   await assertOneCurrentGuidance(page);
@@ -215,6 +220,8 @@ export async function completeCaseWithKeyboard(page: Page, caseId: CaseId) {
     if (!block) throw new Error(`No rewrite block ${blockId}`);
     await press(page.locator('.rewrite-block').filter({ hasText: block.text }).getByRole('button', { name: /^블록 넣기/ }));
   }
+  await expect(page.getByRole('list', { name: '사용 가능한 블록' })).not.toContainText(/(?:psb|mut|cna|lws)-block-[a-z0-9-]+/i);
+  await expect(page.getByRole('list', { name: '조립한 블록' })).not.toContainText(/(?:psb|mut|cna|lws)-block-[a-z0-9-]+/i);
   const rewriteProceed = page.getByRole('button', { name: '관점 전환 완료', exact: true });
   await expect(rewriteProceed).toHaveClass(/gi-pulse/);
   await assertOneCurrentGuidance(page);

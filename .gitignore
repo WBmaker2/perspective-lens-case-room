@@ -2,6 +2,9 @@ node_modules/
 dist/
 playwright-report/
 test-results/
+.playwright-mcp/
+.impeccable/build/
+.impeccable/review/
 *.local
 .DS_Store
 .superpowers/

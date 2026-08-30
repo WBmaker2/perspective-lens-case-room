@@ -217,6 +217,8 @@ export function CrossExamination({
   const revisionSaved = propsRevisionSaved;
   const hiddenRecords = pack.neutralRecords.filter((record) => record.visibility === 'reveal');
   const visibleRecords = hiddenRecords.filter((record) => revealedRecordIds.includes(record.id));
+  const selectedCategoryCount = categories.filter((category) => draft[category.key].length > 0).length;
+  const comparisonProgress = `비교 항목 ${selectedCategoryCount} / ${categories.length} · 근거 ${draft.supportingSentenceIds.length}개${phase === 'revised' ? ` · 이유 ${reasonSentenceIds.length}개` : ''}`;
 
   const toggleOption = (key: DraftOptionKey, optionId: string) => {
     setDraft((current) => {
@@ -259,6 +261,11 @@ export function CrossExamination({
         <p className="eyebrow">CROSS-EXAMINATION / 04</p>
         <h1 id="comparison-title" data-stage-heading tabIndex={-1}>교차 조사</h1>
         <p className="lead">두 서술에서 공통 사실·다른 표현·빠진 정보를 찾아 근거 문장과 연결해 보세요.</p>
+      </div>
+
+      <div className="comparison-progress" role="status" aria-label="비교 진행률" aria-live="polite">
+        <span>지금까지 고른 것</span>
+        <strong>{comparisonProgress}</strong>
       </div>
 
       {phase !== 'initial' && initialDraft ? <InitialThought pack={pack} draft={initialDraft} /> : null}

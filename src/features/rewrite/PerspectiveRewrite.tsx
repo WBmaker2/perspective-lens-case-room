@@ -237,14 +237,13 @@ export function PerspectiveRewrite({ pack, draft, onChange, onContinue }: Perspe
             {pack.rewriteBlocks.map((block) => (
               <li className="rewrite-block" key={block.id} data-block-id={block.id}>
                 <span className="rewrite-block__text">{block.text}</span>
-                <small className="rewrite-block__id">{block.id}</small>
                 <button
                   className="rewrite-operation"
                   id={controlId('add', block.id)}
                   data-rewrite-action="add"
                   data-block-id={block.id}
                   type="button"
-                  aria-label={`블록 넣기: ${block.text} (${block.id})`}
+                  aria-label={`블록 넣기: ${block.text}`}
                   onKeyDown={(event) => activateWithKeyboard(event, () => addBlock(block.id))}
                   onClick={() => addBlock(block.id)}
                   disabled={local.blockIds.includes(block.id)}
@@ -270,7 +269,7 @@ export function PerspectiveRewrite({ pack, draft, onChange, onContinue }: Perspe
                     data-rewrite-action="move-up"
                     data-block-id={block.id}
                     type="button"
-                    aria-label={`위로 이동: ${block.text} (${block.id})`}
+                    aria-label={`위로 이동: ${block.text}`}
                     onKeyDown={(event) => activateWithKeyboard(event, () => moveBlock(index, -1))}
                     onClick={() => moveBlock(index, -1)}
                     disabled={displayIndex === 0}
@@ -283,7 +282,7 @@ export function PerspectiveRewrite({ pack, draft, onChange, onContinue }: Perspe
                     data-rewrite-action="move-down"
                     data-block-id={block.id}
                     type="button"
-                    aria-label={`아래로 이동: ${block.text} (${block.id})`}
+                    aria-label={`아래로 이동: ${block.text}`}
                     onKeyDown={(event) => activateWithKeyboard(event, () => moveBlock(index, 1))}
                     onClick={() => moveBlock(index, 1)}
                     disabled={displayIndex === assembledEntries.length - 1}
@@ -296,7 +295,7 @@ export function PerspectiveRewrite({ pack, draft, onChange, onContinue }: Perspe
                     data-rewrite-action="remove"
                     data-block-id={block.id}
                     type="button"
-                    aria-label={`블록 빼기: ${block.text} (${block.id})`}
+                    aria-label={`블록 빼기: ${block.text}`}
                     onKeyDown={(event) => activateWithKeyboard(event, () => removeBlock(index))}
                     onClick={() => removeBlock(index)}
                   >
