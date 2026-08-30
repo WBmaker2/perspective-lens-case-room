@@ -43,6 +43,13 @@ Playwright 10개 테스트는 네 허구 사건의 keyboard-only 시작→보고
 - `impeccable` comps/spec/plates는 통과했으며 hero comp 대조는 61.7%로 72% 기준에 미달해 열린 상태입니다. 시각 대조를 강제 통과로 표시하지 않았습니다.
 - VoiceOver와 실제 보조공학 승인, 학생·교사의 실제 수업 관찰은 수행하지 않았습니다.
 
+## 공개 릴리스 확인 — 2026-08-30
+
+- PR [#1](https://github.com/WBmaker2/perspective-lens-case-room/pull/1)을 `main`에 squash 병합했으며 병합 커밋은 `8ed3872526186078feed7ffb7fd83b6f88a2d703`입니다.
+- [GitHub Actions Pages run 33293582641](https://github.com/WBmaker2/perspective-lens-case-room/actions/runs/33293582641)의 build와 deploy job이 모두 성공했습니다. build는 unit/type/lint/filesize/build/Chromium/E2E를 통과한 뒤 artifact를 배포했습니다.
+- [공개 학습자 URL](https://wbmaker2.github.io/perspective-lens-case-room/)은 HTTP 200을 반환했고, 문서 제목 `관점 렌즈 사건실`과 `favicon.svg`, CSS, JS 정적 자산이 각각 HTTP 200으로 응답했습니다.
+- GitHub Actions 로그의 Node.js 20 deprecation annotation은 앱 실패가 아닌 runner action 런타임 경고이며 배포 job은 성공했습니다.
+
 ## 자산·안전 확인
 
 `src/components/CaseIllustration.tsx`의 사건별 인라인 SVG와 `public/favicon.svg`를 유지했습니다. 생성한 세 comp는 `.impeccable/mocks/`의 비배포 참고 자료이며 각 `.png.json` sidecar에 prompt와 승인 방향을 기록했습니다. 외부 이미지·폰트·분석·AI·서버·업로드·학생 식별 정보·음성 기능은 추가하지 않았고, 관련 결정은 `work/education-webapp-redesign-assets.md`에 남겼습니다. `impeccable`, `ui-ux-pro-max`, `redesign-existing-projects`, `imagegen` 역할 파일은 읽고 적용했습니다.
@@ -57,4 +64,4 @@ Playwright 10개 테스트는 네 허구 사건의 keyboard-only 시작→보고
 
 ## 릴리스 상태
 
-이번 요청에서는 커밋, 푸시, GitHub Pages 배포, HVC 등록을 실행하지 않았습니다. 작업 트리에는 리디자인 소스·테스트·문서 변경과 시각 검토 참고 자료가 남아 있으며, 도메인·콘텐츠·저장 경계는 보존했습니다. VoiceOver·실제 보조공학·실수업 확인을 별도로 진행하려면 그 결과를 이 보고서의 검증 상태와 분리해 기록해야 합니다.
+커밋·푸시·GitHub Pages 배포는 사용자 승인으로 완료했습니다. HVC 등록은 실행하지 않았습니다. 작업 트리에는 리디자인 소스·테스트·문서 변경과 시각 검토 참고 자료가 기록됐으며, 도메인·콘텐츠·저장 경계는 보존했습니다. VoiceOver·실제 보조공학·실수업 확인을 별도로 진행하려면 그 결과를 이 보고서의 검증 상태와 분리해 기록해야 합니다.
