@@ -51,6 +51,11 @@ describe('CrossExamination', () => {
     );
 
     const progress = screen.getByRole('status', { name: '비교 진행률' });
+    expect(screen.getByText('두 글에서 공통 사실·다른 표현·빠진 정보를 찾고, 왜 그렇게 골랐는지 보여 주는 문장과 연결해 보세요.')).toBeInTheDocument();
+    expect(screen.getByText('두 글에 모두 나온 일을 골라요.')).toBeInTheDocument();
+    expect(screen.getByText('같은 일을 다르게 말한 부분을 골라요.')).toBeInTheDocument();
+    expect(screen.getByText('한 글에만 나와 다른 글에는 빠진 일을 골라요.')).toBeInTheDocument();
+    expect(screen.getByText('고른 항목을 뒷받침하는 문장을 모두 골라요.')).toBeInTheDocument();
     expect(progress).toHaveTextContent('비교 항목 0 / 3 · 근거 0개');
 
     await user.click(screen.getByRole('group', { name: '공통 사실' }).querySelector<HTMLInputElement>('[data-option-id="mut-comparison-umbrella"]')!);
@@ -227,13 +232,14 @@ describe('CrossExamination', () => {
     expect(screen.queryByText(/파란 표찰은 걸이 아래로 떨어져 있었다/)).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: '추가 기록 열기' }));
     expect(screen.getByText('파란 표찰은 우산 걸이 아래로 떨어져 있었다.')).toBeInTheDocument();
-    const records = screen.getAllByRole('listitem', { name: /중립 기록/ });
+    const records = screen.getAllByRole('listitem', { name: /사실만 적힌 기록/ });
     expect(records.map((item) => item.textContent)).toEqual([
       '02가람은 미술실에서 나오며 노란 우산을 복도 걸이에 두었다.',
       '03다온은 이름표 없는 우산을 분실물 기록에 적고 안내 책상으로 옮겼다.',
       '04파란 표찰은 우산 걸이 아래로 떨어져 있었다.',
     ]);
-    expect(screen.getByRole('status', { name: '추가 기록 안내' })).toHaveAttribute('aria-live', 'polite');
+    expect(screen.getByRole('status', { name: '추가 사실 기록 안내' })).toHaveAttribute('aria-live', 'polite');
+    expect(screen.getByText('사실만 적힌 기록 · 순서대로 열림')).toBeInTheDocument();
 
     const changed = missingUmbrellaTag.comparisonOptions.find((option) => option.id === 'mut-comparison-moved')!;
     const differentGroup = screen.getByRole('group', { name: '공통 사실' });

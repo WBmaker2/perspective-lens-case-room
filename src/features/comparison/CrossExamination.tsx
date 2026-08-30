@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { evaluateComparison } from '../../domain/evaluateComparison';
 import { StageActionButton } from '../../components/StageActionButton';
 import { NeutralRecordReveal } from './NeutralRecordReveal';
-import { feedbackStatusLabels, sentenceReference, sentenceReferences } from '../../content/learnerLabels';
+import { comparisonCategoryGuidance, feedbackStatusLabels, sentenceReference, sentenceReferences } from '../../content/learnerLabels';
 import type { CasePack, ComparisonOption } from '../../model/case';
 import type { ComparisonFeedback } from '../../model/feedback';
 import type { ComparisonDraft, ComparisonPhase } from '../../model/session';
@@ -25,10 +25,16 @@ export interface CrossExaminationProps {
 type DraftOptionKey = 'sharedFactOptionIds' | 'differentExpressionOptionIds' | 'missingInformationOptionIds';
 
 const categories: readonly { key: DraftOptionKey; label: string; validFor: ComparisonOption['validFor'][number] }[] = [
-  { key: 'sharedFactOptionIds', label: '공통 사실', validFor: 'shared-fact' },
-  { key: 'differentExpressionOptionIds', label: '다른 표현', validFor: 'different-expression' },
-  { key: 'missingInformationOptionIds', label: '빠진 정보', validFor: 'missing-information' },
+  { key: 'sharedFactOptionIds', label: comparisonCategoryGuidance.sharedFactOptionIds.label, validFor: comparisonCategoryGuidance.sharedFactOptionIds.validFor },
+  { key: 'differentExpressionOptionIds', label: comparisonCategoryGuidance.differentExpressionOptionIds.label, validFor: comparisonCategoryGuidance.differentExpressionOptionIds.validFor },
+  { key: 'missingInformationOptionIds', label: comparisonCategoryGuidance.missingInformationOptionIds.label, validFor: comparisonCategoryGuidance.missingInformationOptionIds.validFor },
 ];
+
+const categoryDescriptions: Readonly<Record<DraftOptionKey, string>> = {
+  sharedFactOptionIds: comparisonCategoryGuidance.sharedFactOptionIds.description,
+  differentExpressionOptionIds: comparisonCategoryGuidance.differentExpressionOptionIds.description,
+  missingInformationOptionIds: comparisonCategoryGuidance.missingInformationOptionIds.description,
+};
 
 const emptyDraft = (): ComparisonDraft => ({
   sharedFactOptionIds: [],
@@ -84,6 +90,7 @@ function OptionFieldset({
   return (
     <fieldset className={`comparison-fieldset comparison-fieldset--${category.key}`}>
       <legend>{category.label}</legend>
+      <p className="supporting-copy">{categoryDescriptions[category.key]}</p>
       <div className="comparison-options">
         {options.length > 0 ? options.map((option) => (
           <label className="comparison-option" key={option.id}>
@@ -116,9 +123,9 @@ function SupportingSentenceChecklist({
   const prefix = reason ? '이유 문장' : '근거 문장';
   return (
     <fieldset className={`supporting-sentence-fieldset${reason ? ' supporting-sentence-fieldset--reason' : ''}`}>
-      <legend>{reason ? '생각이 달라진 이유를 보여 주는 문장' : '비교를 뒷받침하는 근거 문장'}</legend>
+      <legend>{reason ? '생각을 바꾼 까닭이 담긴 문장' : '고른 이유를 보여 주는 근거 문장'}</legend>
       <p className="supporting-copy">
-        {reason ? '수정한 판단의 이유가 된 실제 서술 문장을 하나 이상 고르세요.' : '고른 비교 항목을 뒷받침하는 서술 문장을 모두 고르세요.'}
+        {reason ? '생각을 바꾼 까닭이 담긴 문장을 하나 이상 골라요.' : '고른 항목을 뒷받침하는 문장을 모두 골라요.'}
       </p>
       <div className="supporting-sentence-list">
         {pack.narrators.map((narrator) => (
@@ -153,7 +160,7 @@ function InitialThought({ pack, draft }: { pack: CasePack; draft: ComparisonDraf
     <section className="initial-thought" aria-labelledby="initial-thought-title">
       <div className="section-label-row">
         <h2 id="initial-thought-title">처음 생각</h2>
-        <span className="muted">저장된 초기 비교 · 읽기 전용</span>
+        <span className="muted">처음에 고른 내용</span>
       </div>
       <ul className="initial-thought__list">
         {selectedOptions.map((option) => <li key={option.id}>{option.label}</li>)}
@@ -260,7 +267,7 @@ export function CrossExamination({
       <div className="stage-heading-block">
         <p className="eyebrow">CROSS-EXAMINATION / 04</p>
         <h1 id="comparison-title" data-stage-heading tabIndex={-1}>교차 조사</h1>
-        <p className="lead">두 서술에서 공통 사실·다른 표현·빠진 정보를 찾아 근거 문장과 연결해 보세요.</p>
+        <p className="lead">두 글에서 공통 사실·다른 표현·빠진 정보를 찾고, 왜 그렇게 골랐는지 보여 주는 문장과 연결해 보세요.</p>
       </div>
 
       <div className="comparison-progress" role="status" aria-label="비교 진행률" aria-live="polite">
@@ -289,7 +296,7 @@ export function CrossExamination({
         <section className="comparison-records" aria-labelledby="neutral-record-title">
           <div className="section-label-row">
             <h2 id="neutral-record-title">추가 기록</h2>
-            <span className="muted">중립 기록 · 순서대로 공개됨</span>
+            <span className="muted">사실만 적힌 기록 · 순서대로 열림</span>
           </div>
           <NeutralRecordReveal records={visibleRecords} labelledBy="neutral-record-title" />
         </section>
@@ -312,7 +319,7 @@ export function CrossExamination({
           <StageActionButton
             disabled={!canSaveInitial}
             isCurrentRequired={Boolean(canSaveInitial)}
-            guidanceText="세 비교 항목과 근거 문장을 연결했어요. 초기 비교를 저장하세요."
+            guidanceText="세 가지 항목과 고른 이유를 보여 주는 문장을 연결했어요. 처음 비교를 저장하세요."
             onClick={saveInitial}
           >
             비교 완료
@@ -322,7 +329,7 @@ export function CrossExamination({
           <StageActionButton
             disabled={!initialDraft || initialFeedback?.status !== 'supported'}
             isCurrentRequired={Boolean(initialDraft && initialFeedback?.status === 'supported')}
-            guidanceText="처음 생각을 저장했어요. 추가 중립 기록을 열어 보세요."
+            guidanceText="처음 비교를 저장했어요. 사실만 적힌 추가 기록을 열어 보세요."
             onClick={revealRecords}
           >
             추가 기록 열기
@@ -332,7 +339,7 @@ export function CrossExamination({
           <StageActionButton
             disabled={!canSaveRevision}
             isCurrentRequired={Boolean(canSaveRevision)}
-            guidanceText="수정한 비교와 생각이 달라진 이유를 저장하세요."
+            guidanceText="수정한 비교와 생각을 바꾼 까닭을 저장하세요."
             onClick={saveRevision}
           >
             수정 비교 완료
@@ -349,8 +356,8 @@ export function CrossExamination({
           </StageActionButton>
         ) : null}
       </div>
-      {phase === 'initial' && !canSaveInitial ? <p className="gate-hint" role="status">공통 사실·다른 표현·빠진 정보를 각각 하나 이상 고르고 필요한 근거 문장을 선택하세요.</p> : null}
-      {phase === 'revised' && !canSaveRevision && !revisionSaved ? <p className="gate-hint" role="status">수정 비교가 뒷받침되고 이유 문장을 하나 이상 선택해야 저장할 수 있어요.</p> : null}
+      {phase === 'initial' && !canSaveInitial ? <p className="gate-hint" role="status">먼저 세 가지 항목을 각각 하나 이상 고르세요. 그런 다음 고른 이유를 보여 주는 문장을 선택하세요.</p> : null}
+      {phase === 'revised' && !canSaveRevision && !revisionSaved ? <p className="gate-hint" role="status">수정한 비교를 뒷받침할 문장과 생각을 바꾼 까닭을 하나 이상 골라야 저장할 수 있어요.</p> : null}
     </section>
   );
 }

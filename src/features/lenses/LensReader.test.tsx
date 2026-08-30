@@ -42,6 +42,7 @@ describe('LensReader', () => {
     expect(panels).toHaveLength(2);
     panels.forEach((panel, index) => expect(panel).toHaveAttribute('aria-labelledby', tabs[index]!.id));
     const summary = screen.getByRole('region', { name: '차이 요약' });
+    expect(within(summary).getByText('두 사람이 본 단서')).toBeInTheDocument();
     expect(within(summary).getByText(/위치/)).toBeInTheDocument();
     expect(within(summary).getByText(/관심/)).toBeInTheDocument();
     expect(within(summary).getByText(/목적/)).toBeInTheDocument();

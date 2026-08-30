@@ -200,7 +200,7 @@ export function LensReader({ pack, readNarratorIds, markedSentenceIds, onMarkRea
       <section className="difference-summary" role="region" aria-labelledby="difference-summary-title">
         <div className="section-label-row">
           <h2 id="difference-summary-title">차이 요약</h2>
-          <span className="muted">관점의 메타데이터</span>
+          <span className="muted">두 사람이 본 단서</span>
         </div>
         <dl className="difference-summary__list">
           <div><dt>위치</dt><dd>{pack.narrators[0].position} · {pack.narrators[1].position}</dd></div>

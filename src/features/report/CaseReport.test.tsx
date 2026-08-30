@@ -68,6 +68,9 @@ describe('CaseReport', () => {
     expect(screen.getByText('다온은 이름표 없는 우산을 분실물 기록에 적고 안내 책상으로 옮겼다.')).toBeInTheDocument();
     expect(screen.getByText('파란 표찰은 우산 걸이 아래로 떨어져 있었다.')).toBeInTheDocument();
     expect(screen.getByText('보이는 정보를 살핀 관점')).toBeInTheDocument();
+    expect(screen.getByText('지킨 사실')).toBeInTheDocument();
+    expect(screen.getByText('사용한 관점 단서')).toBeInTheDocument();
+    expect(screen.getByText('두 글에서 고른 근거 문장을 다시 확인해 보세요. 문장을 누르면 원래 자리로 돌아가요.')).toBeInTheDocument();
     expect(screen.queryByText('mut-f-3')).not.toBeInTheDocument();
     expect(screen.queryByText(/근거 문장 ID|연결한 근거 문장 ID|missing-umbrella/)).not.toBeInTheDocument();
     const evidenceButton = screen.getByRole('button', { name: '가람 근거 문장 4 다시 보기' });

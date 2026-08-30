@@ -132,7 +132,7 @@ export function CaseReport({ model, pack, onRevisitStage, onRevisitSentence, onR
 
             <section className="case-report__section" aria-labelledby={`${headingPrefix}-evidence-title`}>
               <h2 id={`${headingPrefix}-evidence-title`}>사용한 근거</h2>
-              <p className="case-report__intro">{printMode ? '인물별 문장 번호와 근거 연결 상태를 참고하세요.' : '두 렌즈의 문장을 순서대로 확인했어요. 문장을 다시 읽으려면 해당 버튼을 누르세요.'}</p>
+              <p className="case-report__intro">{printMode ? '인물별 문장 번호와 근거 연결 상태를 참고하세요.' : '두 글에서 고른 근거 문장을 다시 확인해 보세요. 문장을 누르면 원래 자리로 돌아가요.'}</p>
               <ol className="case-report__evidence-list">
                 {model.evidence.map((evidence) => (
                   <li key={evidence.sentenceId} className="case-report__evidence-row">
@@ -164,7 +164,7 @@ export function CaseReport({ model, pack, onRevisitStage, onRevisitSentence, onR
               </div>
               <div className="case-report__changed">
                 <span>달라진 비교 항목</span>
-                <p>{model.changedOptionIds.length > 0 ? model.changedOptionIds.map((id) => optionLabel(pack, id)).join(' · ') : '바뀐 항목 없음'}</p>
+                <p>{model.changedOptionIds.length > 0 ? model.changedOptionIds.map((id) => optionLabel(pack, id)).join(' · ') : '바뀐 항목이 없어요.'}</p>
               </div>
               <div className="case-report__reason">
                 <span>생각이 달라진 이유</span>
@@ -191,9 +191,9 @@ export function CaseReport({ model, pack, onRevisitStage, onRevisitSentence, onR
             <section className="case-report__section" aria-labelledby={`${headingPrefix}-preserved-title`}>
               <h2 id={`${headingPrefix}-preserved-title`}>관점 전환에서 유지한 사실</h2>
               <div className="case-report__fact-row">
-                <span>보존한 사실 표지</span>
+                <span>지킨 사실</span>
                 {model.preservedFactIds.length > 0 ? (
-                  <ul className="case-report__facts" aria-label="보존한 사실">
+                  <ul className="case-report__facts" aria-label="지킨 사실">
                     {model.preservedFactIds.map((factId) => (
                       <li key={factId} data-fact-id={factId}>{factReference(pack, factId)}</li>
                     ))}
@@ -201,9 +201,9 @@ export function CaseReport({ model, pack, onRevisitStage, onRevisitSentence, onR
                 ) : <p>기록 없음</p>}
               </div>
               <div className="case-report__fact-row">
-                <span>사용한 관점 표지</span>
+                <span>사용한 관점 단서</span>
                 {model.perspectiveTags.length > 0 ? (
-                  <ul className="case-report__tags" aria-label="사용한 관점">
+                  <ul className="case-report__tags" aria-label="사용한 관점 단서">
                     {model.perspectiveTags.map((tag) => (
                       <li key={tag} data-perspective-tag={tag}>{perspectiveTagLabels[tag] ?? '기록된 관점'}</li>
                     ))}

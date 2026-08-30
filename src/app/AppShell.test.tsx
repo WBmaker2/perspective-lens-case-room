@@ -196,13 +196,13 @@ describe('AppShell', () => {
     await user.click(screen.getByRole('radio', { name: '나래' }));
     await user.click(screen.getByRole('radio', { name: '같은 반 친구' }));
     await user.click(screen.getByRole('radio', { name: '사실 보고' }));
-    const available = screen.getByRole('list', { name: '사용 가능한 블록' });
+    const available = screen.getByRole('list', { name: '고를 수 있는 문장 조각' });
     for (const blockId of clubNoticePoster.rewriteRules[0]!.acceptedExampleBlockSets[0]!) {
       const item = available.querySelector(`[data-block-id="${blockId}"]`);
       expect(item).not.toBeNull();
       const block = clubNoticePoster.rewriteBlocks.find((candidate) => candidate.id === blockId);
       expect(block).toBeDefined();
-      await user.click(within(item as HTMLElement).getByRole('button', { name: `블록 넣기: ${block!.text}` }));
+      await user.click(within(item as HTMLElement).getByRole('button', { name: `문장 조각 넣기: ${block!.text}` }));
     }
     await waitFor(() => {
       const saved = JSON.parse(data.get(SESSION_KEY) ?? '{}') as { rewriteDraft: { blockIds: string[] } };

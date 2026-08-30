@@ -144,7 +144,7 @@ test('axe, semantics, tabs, announcements, and dialogs cover the full learner pa
   for (const blockId of rule.acceptedExampleBlockSets[0] ?? []) {
     const block = pack.rewriteBlocks.find((item) => item.id === blockId);
     if (!block) throw new Error(`No rewrite block ${blockId}`);
-    await key(page.locator('.rewrite-block').filter({ hasText: block.text }).getByRole('button', { name: /^블록 넣기/ }));
+    await key(page.locator('.rewrite-block').filter({ hasText: block.text }).getByRole('button', { name: /^문장 조각 넣기/ }));
   }
   await key(page.getByRole('button', { name: '관점 전환 완료', exact: true }));
   await assertStage(page, '사건 보고서');

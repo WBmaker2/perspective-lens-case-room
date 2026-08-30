@@ -174,14 +174,14 @@ export async function completeCaseWithKeyboard(page: Page, caseId: CaseId) {
 
   await expect(page.getByRole('heading', { name: '처음 생각' })).toBeVisible();
   for (const record of pack.neutralRecords.filter((item) => item.visibility === 'reveal')) {
-    await expect(page.getByRole('listitem', { name: `중립 기록 ${record.sequence}` })).toHaveCount(0);
+    await expect(page.getByRole('listitem', { name: `사실만 적힌 기록 ${record.sequence}` })).toHaveCount(0);
   }
   const reveal = page.getByRole('button', { name: '추가 기록 열기', exact: true });
   await expect(reveal).toHaveClass(/gi-pulse/);
   await assertOneCurrentGuidance(page);
   await press(reveal);
   for (const record of pack.neutralRecords.filter((item) => item.visibility === 'reveal')) {
-    await expect(page.getByRole('listitem', { name: `중립 기록 ${record.sequence}` })).toBeVisible();
+    await expect(page.getByRole('listitem', { name: `사실만 적힌 기록 ${record.sequence}` })).toBeVisible();
   }
 
   const change = draftKeys.map(([key, validFor, groupName]) => ({
@@ -218,10 +218,10 @@ export async function completeCaseWithKeyboard(page: Page, caseId: CaseId) {
   for (const blockId of rule.acceptedExampleBlockSets[0] ?? []) {
     const block = pack.rewriteBlocks.find((item) => item.id === blockId);
     if (!block) throw new Error(`No rewrite block ${blockId}`);
-    await press(page.locator('.rewrite-block').filter({ hasText: block.text }).getByRole('button', { name: /^블록 넣기/ }));
+    await press(page.locator('.rewrite-block').filter({ hasText: block.text }).getByRole('button', { name: /^문장 조각 넣기/ }));
   }
-  await expect(page.getByRole('list', { name: '사용 가능한 블록' })).not.toContainText(/(?:psb|mut|cna|lws)-block-[a-z0-9-]+/i);
-  await expect(page.getByRole('list', { name: '조립한 블록' })).not.toContainText(/(?:psb|mut|cna|lws)-block-[a-z0-9-]+/i);
+  await expect(page.getByRole('list', { name: '고를 수 있는 문장 조각' })).not.toContainText(/(?:psb|mut|cna|lws)-block-[a-z0-9-]+/i);
+  await expect(page.getByRole('list', { name: '조립한 문장 조각' })).not.toContainText(/(?:psb|mut|cna|lws)-block-[a-z0-9-]+/i);
   const rewriteProceed = page.getByRole('button', { name: '관점 전환 완료', exact: true });
   await expect(rewriteProceed).toHaveClass(/gi-pulse/);
   await assertOneCurrentGuidance(page);

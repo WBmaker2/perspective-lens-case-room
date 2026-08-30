@@ -74,7 +74,7 @@ async function completeReport(page: Page) {
   for (const blockId of rule.acceptedExampleBlockSets[0] ?? []) {
     const block = pack.rewriteBlocks.find((item) => item.id === blockId);
     if (!block) throw new Error(`No rewrite block ${blockId}`);
-    await press(page.locator('.rewrite-block').filter({ hasText: block.text }).getByRole('button', { name: /^블록 넣기/ }));
+    await press(page.locator('.rewrite-block').filter({ hasText: block.text }).getByRole('button', { name: /^문장 조각 넣기/ }));
   }
   await press(page.getByRole('button', { name: '관점 전환 완료', exact: true }));
   await expect(page.getByRole('heading', { name: '사건 보고서' })).toBeVisible();

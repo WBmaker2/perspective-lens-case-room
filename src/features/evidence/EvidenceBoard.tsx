@@ -3,7 +3,7 @@ import { evaluateEvidenceSelection } from '../../domain/evaluateEvidence';
 import { FeedbackPanel } from '../../components/FeedbackPanel';
 import { SentenceCard } from '../../components/SentenceCard';
 import { StageActionButton } from '../../components/StageActionButton';
-import { sentenceOwner } from '../../content/learnerLabels';
+import { evidenceCategoryGuidance, sentenceOwner } from '../../content/learnerLabels';
 import type { CasePack, EvidenceCategory, NarrativeSentence } from '../../model/case';
 import type { EvidenceFeedback } from '../../model/feedback';
 import type { EvidenceSelection } from '../../model/session';
@@ -18,9 +18,9 @@ export interface EvidenceBoardProps {
 type Draft = Pick<EvidenceSelection, 'categoryIds' | 'selectedSegmentIds'>;
 
 const categoryLabels: Readonly<Record<EvidenceCategory, string>> = {
-  observation: '관찰 사실',
-  inference: '인물의 추론',
-  evaluation: '평가 표현',
+  observation: evidenceCategoryGuidance.observation.label,
+  inference: evidenceCategoryGuidance.inference.label,
+  evaluation: evidenceCategoryGuidance.evaluation.label,
 };
 const categoryOrder: readonly EvidenceCategory[] = ['observation', 'inference', 'evaluation'];
 
@@ -40,7 +40,7 @@ function SegmentChoices({ sentence, selectedSegmentIds, onToggle }: {
   if (sentence.kind !== 'mixed') return null;
   return (
     <fieldset className="segment-choices">
-      <legend>문장 부분을 모두 확인하세요</legend>
+      <legend>이 문장에 섞인 부분을 모두 골라 보세요</legend>
       <div className="segment-choices__list">
         {sentence.segments.map((segment) => (
           <label className="segment-choice" key={segment.id}>
@@ -63,7 +63,10 @@ function CategoryChoices({ categoryIds, onToggle }: {
 }) {
   return (
     <fieldset className="category-choices">
-      <legend>이 문장의 근거를 분류하세요</legend>
+      <legend>이 문장의 종류를 골라 보세요</legend>
+      <p className="supporting-copy category-choice-help">
+        {categoryOrder.map((category) => `${evidenceCategoryGuidance[category].label}: ${evidenceCategoryGuidance[category].description}`).join(' · ')}
+      </p>
       <div className="category-choices__list">
         {categoryOrder.map((category) => (
           <button
@@ -184,7 +187,7 @@ export function EvidenceBoard({ pack, selections, onRecord, onContinue }: Eviden
       <div className="stage-heading-block">
         <p className="eyebrow">EVIDENCE BOARD / 03</p>
         <h1 id="evidence-title" data-stage-heading tabIndex={-1}>근거 보드</h1>
-        <p className="lead">문장을 고른 뒤, 보이는 사실·인물의 추론·평가 표현을 근거로 분류해 보세요.</p>
+        <p className="lead">문장을 고른 뒤, 사실·생각·판단 중 어디에 해당하는지 골라 보세요.</p>
       </div>
 
       <div className="evidence-board__status" aria-label="근거 보드 진행 안내">
@@ -225,15 +228,18 @@ export function EvidenceBoard({ pack, selections, onRecord, onContinue }: Eviden
       <div className="evidence-board__legend" aria-label="근거 분류 안내">
         <span className="evidence-progress" role="status" aria-live="polite">분류 완료 {supportedCount} / {sentences.length}</span>
         <span className="evidence-total" aria-hidden="true">10개 문장</span>
-        <span>혼합 문장은 문장 부분을 모두 선택</span>
+        <span>두 종류가 섞인 문장은 해당 부분을 모두 골라요.</span>
       </div>
       <section className="evidence-board__workspace" aria-labelledby="evidence-workspace-title">
         <header className="evidence-board__workspace-heading">
           <div>
             <h2 id="evidence-workspace-title">문장 카드</h2>
-            <p>카드를 열어 근거 종류를 고르고, 표시한 문장은 아래 보드에 모입니다.</p>
+            <p>카드를 열어 문장의 종류를 골라요. 고른 문장은 아래에서 다시 볼 수 있어요.</p>
+            <p className="supporting-copy category-choice-help">
+              {categoryOrder.map((category) => `${evidenceCategoryGuidance[category].label}: ${evidenceCategoryGuidance[category].description}`).join(' · ')}
+            </p>
           </div>
-          <span className="evidence-board__selected-count">선택한 근거 <strong>{selectedEvidence.length}</strong> / {sentences.length}</span>
+          <span className="evidence-board__selected-count">분류한 문장 <strong>{selectedEvidence.length}</strong> / {sentences.length}</span>
         </header>
         <div className="evidence-category-columns" aria-label="근거 종류별 모음">
           {categoryCounts.map(({ category, count }) => {
@@ -270,7 +276,7 @@ export function EvidenceBoard({ pack, selections, onRecord, onContinue }: Eviden
                 </li>
               ))}
             </ul>
-          ) : <p className="evidence-tray__empty">아직 모은 문장이 없어요. 문장 카드를 열어 분류해 보세요.</p>}
+        ) : <p className="evidence-tray__empty">아직 모은 문장이 없어요. 문장 카드를 열어 종류를 골라 보세요.</p>}
         </section>
         <ol className="evidence-list" aria-label="분류할 근거 문장">
           {sentences.map((sentence) => {
@@ -298,7 +304,7 @@ export function EvidenceBoard({ pack, selections, onRecord, onContinue }: Eviden
           <StageActionButton
             disabled={!isActiveReady}
             isCurrentRequired={Boolean(activeSentence && !selectionIsSupported(activeSentence, effectiveSelections[activeSentence.id]))}
-            guidanceText="문장을 분류하고 근거를 표시해 보세요."
+            guidanceText="문장의 종류를 골라 근거를 표시해 보세요."
             onClick={recordActiveSentence}
           >
             근거 표시하기
@@ -307,13 +313,13 @@ export function EvidenceBoard({ pack, selections, onRecord, onContinue }: Eviden
         <StageActionButton
           disabled={!complete}
           isCurrentRequired={complete}
-          guidanceText="열 문장을 모두 분류했어요. 교차 조사를 시작하세요."
+          guidanceText="모든 문장을 분류했어요. 이제 두 글을 비교해 보세요."
           onClick={onContinue}
         >
           교차 조사 시작
         </StageActionButton>
       </div>
-      {effectiveFirstUnclassified && !activeSentence ? <p className="gate-hint" role="status">아직 분류하지 않은 문장을 선택하세요.</p> : null}
+      {effectiveFirstUnclassified && !activeSentence ? <p className="gate-hint" role="status">아직 분류하지 않은 문장을 골라 보세요.</p> : null}
     </section>
   );
 }

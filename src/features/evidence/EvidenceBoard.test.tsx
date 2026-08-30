@@ -43,8 +43,11 @@ describe('EvidenceBoard', () => {
     for (const lens of playgroundStorageBox.narrators) expect(screen.getByText(`${lens.displayName}의 글`)).toBeInTheDocument();
     expect(screen.getByRole('complementary', { name: '분류한 근거 요약' })).toHaveTextContent(/관찰 사실\s*0 \/ 10/);
     expect(screen.getByRole('heading', { name: '문장 카드' })).toBeInTheDocument();
+    expect(screen.getByText('문장을 고른 뒤, 사실·생각·판단 중 어디에 해당하는지 골라 보세요.')).toBeInTheDocument();
+    expect(screen.getByText(/관찰 사실: 글에서 확인한 일/)).toBeInTheDocument();
+    expect(screen.getByText('두 종류가 섞인 문장은 해당 부분을 모두 골라요.')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: '근거 모음' })).toBeInTheDocument();
-    expect(screen.getByText('아직 모은 문장이 없어요. 문장 카드를 열어 분류해 보세요.')).toBeInTheDocument();
+    expect(screen.getByText('아직 모은 문장이 없어요. 문장 카드를 열어 종류를 골라 보세요.')).toBeInTheDocument();
   });
 
   it('supports keyboard classification, mixed segments, numbered feedback, and the ten-sentence gate', async () => {
@@ -70,6 +73,7 @@ describe('EvidenceBoard', () => {
     firstSentence.focus();
     await user.keyboard('{Enter}');
     rerender(view());
+    expect(screen.getByText('이 문장의 종류를 골라 보세요')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: '관찰 사실' }));
     expect(screen.getByRole('button', { name: '근거 표시하기' })).toHaveClass('gi-pulse');
     await user.click(screen.getByRole('button', { name: '근거 표시하기' }));
@@ -100,6 +104,7 @@ describe('EvidenceBoard', () => {
     for (const sentence of allSentences.slice(2)) await submitSupportedSentence(user, sentence);
     expect(screen.getByRole('button', { name: '교차 조사 시작' })).toHaveClass('gi-pulse');
     expect(screen.getByRole('button', { name: '교차 조사 시작' })).toBeEnabled();
+    expect(screen.getByText('모든 문장을 분류했어요. 이제 두 글을 비교해 보세요.')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: '교차 조사 시작' }));
     expect(continued).toBe(true);
   });

@@ -1,6 +1,32 @@
 import type { CasePack, EvidenceCategory, NarrativeSentence } from '../model/case';
 import type { FeedbackStatus } from '../model/feedback';
 
+export interface EvidenceCategoryGuidance {
+  label: string;
+  description: string;
+}
+
+export const evidenceCategoryGuidance: Readonly<Record<EvidenceCategory, EvidenceCategoryGuidance>> = Object.freeze({
+  observation: { label: '관찰 사실', description: '글에서 확인한 일을 말해요.' },
+  inference: { label: '인물의 추론', description: '보인 정보로 이어서 생각한 내용이에요.' },
+  evaluation: { label: '평가 표현', description: '좋다·중요하다처럼 판단이 담긴 말이에요.' },
+});
+
+export type ComparisonCategoryKey = 'sharedFactOptionIds' | 'differentExpressionOptionIds' | 'missingInformationOptionIds';
+export type ComparisonCategoryValidFor = 'shared-fact' | 'different-expression' | 'missing-information';
+
+export interface ComparisonCategoryGuidance {
+  label: string;
+  description: string;
+  validFor: ComparisonCategoryValidFor;
+}
+
+export const comparisonCategoryGuidance: Readonly<Record<ComparisonCategoryKey, ComparisonCategoryGuidance>> = Object.freeze({
+  sharedFactOptionIds: { label: '공통 사실', description: '두 글에 모두 나온 일을 골라요.', validFor: 'shared-fact' },
+  differentExpressionOptionIds: { label: '다른 표현', description: '같은 일을 다르게 말한 부분을 골라요.', validFor: 'different-expression' },
+  missingInformationOptionIds: { label: '빠진 정보', description: '한 글에만 나와 다른 글에는 빠진 일을 골라요.', validFor: 'missing-information' },
+});
+
 export const feedbackStatusLabels: Readonly<Record<FeedbackStatus, string>> = Object.freeze({
   supported: '잘 연결했어요',
   'partially-supported': '조금 더 연결해 봐요',
@@ -8,9 +34,9 @@ export const feedbackStatusLabels: Readonly<Record<FeedbackStatus, string>> = Ob
 });
 
 export const evidenceCategoryLabels: Readonly<Record<EvidenceCategory, string>> = Object.freeze({
-  observation: '관찰 사실',
-  inference: '인물의 추론',
-  evaluation: '평가 표현',
+  observation: evidenceCategoryGuidance.observation.label,
+  inference: evidenceCategoryGuidance.inference.label,
+  evaluation: evidenceCategoryGuidance.evaluation.label,
 });
 
 export const perspectiveTagLabels: Readonly<Record<string, string>> = Object.freeze({
@@ -52,7 +78,7 @@ export const factReference = (pack: CasePack, factId: string): string => {
 };
 
 export const rewriteBlockReference = (pack: CasePack, blockId: string): string => (
-  pack.rewriteBlocks.find((block) => block.id === blockId)?.text ?? '문장 블록'
+  pack.rewriteBlocks.find((block) => block.id === blockId)?.text ?? '문장 조각'
 );
 
 export const sentenceOwner = (pack: CasePack, sentence: NarrativeSentence): string => (
