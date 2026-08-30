@@ -16,6 +16,7 @@
 - 근거 보드의 진행 수·선택 문장·빈 상태가 실제 분류 상태와 함께 갱신되고, 모바일에서는 렌즈 요약·근거 칸·문장 카드가 한 열로 읽힙니다.
 - `PRODUCT.md`, `design-system/MASTER.md`, `work/education-webapp-redesign-surface-brief.md`와 `.impeccable/mocks/`에 제품 사실·토큰·승인 comp·프롬프트 출처를 기록했습니다. 생성 comp는 비배포 참고 자료입니다.
 - 2026-08-30 자동 게이트는 39개 파일/157개 단위 테스트와 10개 Playwright E2E를 통과했습니다. 승인 브라우저에서는 1586×992 근거 보드와 375px 사건 접수 화면을 확인했습니다. comp hero 대조는 61.7%로 열린 검토 항목이며 강제 통과하지 않았습니다.
+- PR #1을 `main`에 병합한 뒤 [Pages Actions run 33293582641](https://github.com/WBmaker2/perspective-lens-case-room/actions/runs/33293582641)이 build/deploy에 성공했습니다. [공개 학습자 URL](https://wbmaker2.github.io/perspective-lens-case-room/)에서 제목과 CSS·JS·favicon 정적 자산 HTTP 200을 확인했습니다.
 
 리디자인의 자동 검증은 아래 품질 게이트와 `work/education-webapp-redesign-report.md`에 기록합니다. VoiceOver와 실제 보조공학 승인은 이 범위의 검증에 포함하지 않습니다.
 

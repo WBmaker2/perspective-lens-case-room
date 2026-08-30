@@ -8,7 +8,7 @@
 
 2026-08-30 현재 소스·테스트·문서 리디자인을 구현했습니다. `PRODUCT.md`, `design-system/MASTER.md`, 설계 문서와 기존 감사·보고서를 다시 읽고, `impeccable`, `ui-ux-pro-max`, `redesign-existing-projects`, `imagegen` 역할을 적용했습니다. `concept-seed` 방향 `99fd868c`의 승인 구성으로 `.impeccable/mocks/perspective-lens-comp-stage-rail.png`를 북극성 comp로 기록했으며, 두 대안은 비교 자료로 보존했습니다.
 
-`build-phase.mjs`의 comps·spec·plates 단계는 통과했습니다. 승인 comp와 실제 렌더의 hero 대조는 61.7%로 72% 기준에 미달해 열린 상태이며 강제 통과시키지 않았습니다. 따라서 hero 대조는 미해결 검토 항목으로 보고하고, 기능·접근성·반응형 자동 게이트와 승인 브라우저 수동 확인은 별도 증거로 기록합니다. 커밋·푸시·GitHub Pages 배포·HVC 등록은 별도 승인 전까지 실행하지 않습니다. VoiceOver와 실제 보조공학 승인은 이 계획의 검증 범위에 포함하지 않습니다.
+`build-phase.mjs`의 comps·spec·plates 단계는 통과했습니다. 승인 comp와 실제 렌더의 hero 대조는 61.7%로 72% 기준에 미달해 열린 상태이며 강제 통과시키지 않았습니다. 따라서 hero 대조는 미해결 검토 항목으로 보고하고, 기능·접근성·반응형 자동 게이트와 승인 브라우저 수동 확인은 별도 증거로 기록합니다. 커밋·푸시·GitHub Pages 배포는 사용자 승인 후 수행했으며, 실제 결과는 2026-08-30 실행 기록에 남겼습니다. HVC 등록은 실행하지 않았습니다. VoiceOver와 실제 보조공학 승인은 이 계획의 검증 범위에 포함하지 않습니다.
 
 ## 조사 결과와 적용 문서
 
@@ -69,7 +69,7 @@
 - 기존 `data-*` ID는 테스트·상태 연결을 위해 유지하되, 학생에게 보이는 텍스트와 접근 가능한 이름에는 내부 ID를 쓰지 않는다.
 - 모든 소스와 테스트 파일은 499줄 이하로 유지한다.
 - 업데이트 내역은 실제 구현 확인일 `2026-08-30`을 최신 `개선` 행으로 기록하고, 계획·예정 작업은 완료 내역으로 쓰지 않는다.
-- 커밋·푸시·릴리스·배포·HVC 등록은 이 요청 범위에서 실행하지 않는다.
+- 커밋·푸시·릴리스·배포는 사용자 승인 없이는 실행하지 않으며, 이번 승인으로 커밋·푸시·GitHub Pages 배포를 완료했다. HVC 등록은 실행하지 않는다.
 - VoiceOver 호출과 승인 주장은 하지 않는다. 키보드·ARIA·axe·모바일·확대·reduced-motion만 자동·수동 검증한다.
 
 ## 변경하지 않을 범위
@@ -216,7 +216,10 @@ interface ProgressStepsProps {
 - 승인 브라우저 세션: 1586×992 근거 보드와 375px 사건 접수 화면, 무수평스크롤 확인; 콘솔 오류 0건
 - `impeccable`: comps/spec/plates PASS, hero 61.7%로 72% 기준 미달(open); detector는 한 번 실행해 advisory 결과를 기록
 - `git diff --check`: PASS
-- 커밋·푸시·배포·HVC 등록: 실행하지 않음
+- 커밋: `7f92b0a`, `fb57cc5`, `cfa09cf`, `b5756c0`로 기능·스타일·테스트·문서 커밋 완료
+- 푸시: `codex/fix-lens-layout`을 `origin`에 푸시하고 PR #1 생성·squash 병합, `main` 병합 커밋 `8ed3872` 확인
+- GitHub Pages: workflow run `33293582641`의 build/deploy 성공, 공개 URL HTTP 200·title·CSS/JS/favicon 200 확인
+- HVC 등록: 실행하지 않음
 
 ## 향후 실행할 명령과 예상 결과
 
@@ -248,11 +251,11 @@ git diff --check
 
 ## 롤백 방법
 
-리디자인 변경은 공통 안내·콘텐츠 표시·스타일·테스트·문서 파일에 한정한다. 검증 실패 시 변경 파일 목록을 확인한 뒤 해당 파일만 이전 상태로 복구하고, 기존 reducer·domain·case 콘텐츠·workflow는 건드리지 않는다. `.impeccable/mocks/`의 생성 comp와 sidecar는 비배포 참고 자료이므로 소스 회귀와 분리해 보존하거나 검토 후 제거한다. 커밋·배포 전까지는 작업 트리의 diff로 복구 범위를 검토한다.
+리디자인 변경은 공통 안내·콘텐츠 표시·스타일·테스트·문서 파일에 한정한다. 검증 실패 시 변경 파일 목록을 확인한 뒤 해당 파일만 revert 커밋으로 복구하고, 기존 reducer·domain·case 콘텐츠·workflow는 건드리지 않는다. `.impeccable/mocks/`의 생성 comp와 sidecar는 비배포 참고 자료이므로 소스 회귀와 분리해 보존하거나 검토 후 제거한다. 이미 배포된 변경을 되돌릴 때는 revert 커밋을 `main`에 병합하고 동일 Pages workflow 성공을 확인한다.
 
 ## 향후 커밋 단계
 
-이 요청에서는 실행하지 않으며, 사용자가 별도로 승인한 후 다음처럼 분리한다.
+다음 커밋은 사용자 승인에 따라 실제 실행했다.
 
 1. `docs: add education redesign plan and audit` — 계획·초기 감사·디자인 시스템 기록
 2. `feat: clarify learner stage guidance` — 공통 단계 안내·사건/진행 UX
@@ -260,4 +263,4 @@ git diff --check
 4. `style: refine case room learning surfaces` — 토큰·반응형·모션 스타일
 5. `test: verify redesigned learner journey` — 자동·브라우저 검증과 최종 보고서
 
-각 단계는 해당 범위의 테스트와 `git diff --check`를 통과한 뒤에만 다음 단계로 이동하며, 이 문서 작성 중에는 커밋·푸시·배포하지 않는다.
+각 단계는 해당 범위의 테스트와 `git diff --check`를 통과한 뒤 다음 단계로 이동했다. 계획 작성 당시에는 커밋·푸시·배포하지 않았고, 이후 별도 사용자 승인으로 릴리스를 수행했다.
