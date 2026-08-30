@@ -29,6 +29,8 @@ describe('CaseIntake', () => {
     const { rerender, container } = render(view());
 
     expect(screen.getAllByRole('button', { name: /사건 선택/ })).toHaveLength(4);
+    expect(screen.getByRole('button', { name: new RegExp(casePacks[0]!.focusQuestion) })).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('먼저 사건과 첫 생각을 골라 주세요.');
     expect(screen.queryByRole('img')).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /운동장 정리 상자 사건 선택/ }));
     rerender(view());
@@ -42,10 +44,11 @@ describe('CaseIntake', () => {
       expect(container.textContent).not.toContain(record.text);
     });
 
-    expect(screen.getByText(casePacks[0]!.focusQuestion)).toBeInTheDocument();
+    expect(screen.getAllByText(casePacks[0]!.focusQuestion)).toHaveLength(2);
     expect(screen.getAllByRole('radio')).toHaveLength(3);
     expect(container.querySelectorAll('input[type="text"], input[type="file"], textarea')).toHaveLength(0);
     expect(screen.getByRole('button', { name: '사건 렌즈 열기' })).toBeDisabled();
+    expect(screen.getByRole('status')).toHaveTextContent('첫 생각을 하나 골라 주세요.');
     expect(container.querySelectorAll('.gi-pulse')).toHaveLength(0);
 
     await user.click(screen.getByRole('radio', { name: /보이는 정보/ }));

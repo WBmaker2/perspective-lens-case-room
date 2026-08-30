@@ -33,6 +33,33 @@ const chooseSupportedComparison = async (user: ReturnType<typeof userEvent.setup
 };
 
 describe('CrossExamination', () => {
+  it('shows comparison and evidence progress before the completion gate', async () => {
+    const user = userEvent.setup();
+    render(
+      <CrossExamination
+        pack={missingUmbrellaTag}
+        phase="initial"
+        initialDraft={null}
+        revisedDraft={null}
+        onSaveInitial={() => undefined}
+        onReveal={() => undefined}
+        onSaveRevision={() => undefined}
+        onContinue={() => undefined}
+        revealedRecordIds={[]}
+        revisionEvidenceSentenceIds={[]}
+      />,
+    );
+
+    const progress = screen.getByRole('status', { name: '비교 진행률' });
+    expect(progress).toHaveTextContent('비교 항목 0 / 3 · 근거 0개');
+
+    await user.click(screen.getByRole('group', { name: '공통 사실' }).querySelector<HTMLInputElement>('[data-option-id="mut-comparison-umbrella"]')!);
+    expect(progress).toHaveTextContent('비교 항목 1 / 3 · 근거 0개');
+
+    await user.click(screen.getAllByRole('checkbox', { name: /근거 문장/ })[0]!);
+    expect(progress).toHaveTextContent('비교 항목 1 / 3 · 근거 1개');
+  });
+
   it('saves a fresh evidence-linked initial snapshot with one completion pulse', async () => {
     const user = userEvent.setup();
     const saved: ComparisonDraft[] = [];
@@ -133,6 +160,7 @@ describe('CrossExamination', () => {
     expect(screen.queryByRole('button', { name: '수정 비교 완료' })).not.toBeInTheDocument();
     expect(screen.getByRole('group', { name: '공통 사실' }).querySelector<HTMLInputElement>('[data-option-id="mut-comparison-moved"]')).toBeChecked();
     expect(screen.getByRole('group', { name: '공통 사실' }).querySelector<HTMLInputElement>('[data-option-id="mut-comparison-umbrella"]')).not.toBeChecked();
+    expect(screen.getByRole('status', { name: '비교 진행률' })).toHaveTextContent('이유 1개');
     expect(screen.getByRole('heading', { name: '처음 생각' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: '처음 생각' }).parentElement?.parentElement).toHaveTextContent('가람과 다온 모두 노란 우산을 보았다.');
   });

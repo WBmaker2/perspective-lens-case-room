@@ -84,6 +84,7 @@ function CategoryChoices({ categoryIds, onToggle }: {
 export function EvidenceBoard({ pack, selections, onRecord, onContinue }: EvidenceBoardProps) {
   const sentences = useMemo(() => allSentences(pack), [pack]);
   const sentenceOwners = useMemo(() => new Map(sentences.map((sentence) => [sentence.id, sentenceOwner(pack, sentence)])), [pack, sentences]);
+  const sentenceLens = useMemo(() => new Map(pack.narrators.flatMap((lens, index) => lens.sentences.map((sentence) => [sentence.id, index === 0 ? 'A' : 'B'] as const))), [pack]);
   const [activeSentenceId, setActiveSentenceId] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<Readonly<Record<string, Draft>>>({});
   const [localSelections, setLocalSelections] = useState<Readonly<Record<string, EvidenceSelection>>>({});
@@ -110,6 +111,11 @@ export function EvidenceBoard({ pack, selections, onRecord, onContinue }: Eviden
   );
   const complete = sentences.length > 0 && sentences.every((sentence) => selectionIsSupported(sentence, effectiveSelections[sentence.id]));
   const supportedCount = sentences.filter((sentence) => selectionIsSupported(sentence, effectiveSelections[sentence.id])).length;
+  const categoryCounts = categoryOrder.map((category) => ({
+    category,
+    count: sentences.filter((sentence) => selectionIsSupported(sentence, effectiveSelections[sentence.id]) && effectiveSelections[sentence.id]?.categoryIds.includes(category)).length,
+  }));
+  const selectedEvidence = sentences.filter((sentence) => selectionIsSupported(sentence, effectiveSelections[sentence.id]));
 
   const setDraft = (sentenceId: string, next: Draft) => {
     setDrafts((current) => ({ ...current, [sentenceId]: next }));
@@ -181,30 +187,111 @@ export function EvidenceBoard({ pack, selections, onRecord, onContinue }: Eviden
         <p className="lead">문장을 고른 뒤, 보이는 사실·인물의 추론·평가 표현을 근거로 분류해 보세요.</p>
       </div>
 
+      <div className="evidence-board__status" aria-label="근거 보드 진행 안내">
+        <span className="evidence-board__status-label">진행 안내</span>
+        <strong>{supportedCount} / {sentences.length} 문장 분류</strong>
+        <span>{pack.title}</span>
+      </div>
+
+      <section className="evidence-lens-rail" aria-labelledby="evidence-lens-summary-title">
+        <h2 id="evidence-lens-summary-title" className="visually-hidden">두 렌즈 요약</h2>
+        {pack.narrators.map((lens, index) => (
+          <article className={`evidence-lens-card evidence-lens-card--${index === 0 ? 'teal' : 'orange'}`} key={lens.id}>
+            <header className="evidence-lens-card__heading">
+              <span className="evidence-lens-card__badge" aria-hidden="true">{index === 0 ? 'A' : 'B'}</span>
+              <strong>렌즈 {index === 0 ? 'A' : 'B'}</strong>
+              <span>{lens.displayName}의 글</span>
+            </header>
+            <div className="evidence-lens-card__sentences">
+              {lens.sentences.slice(0, 3).map((sentence) => <p key={sentence.id}>{sentence.text}</p>)}
+            </div>
+            <p className="evidence-lens-card__meta">{lens.position} · {lens.interest}</p>
+          </article>
+        ))}
+        <aside className="evidence-comparison-rail" aria-label="분류한 근거 요약">
+          <span className="evidence-comparison-rail__arrow" aria-hidden="true">↔</span>
+          <strong>비교 포인트</strong>
+          <dl>
+            {categoryCounts.map(({ category, count }) => (
+              <div key={category}>
+                <dt>{categoryLabels[category]}</dt>
+                <dd>{count} / {sentences.length}</dd>
+              </div>
+            ))}
+          </dl>
+        </aside>
+      </section>
+
       <div className="evidence-board__legend" aria-label="근거 분류 안내">
         <span className="evidence-progress" role="status" aria-live="polite">분류 완료 {supportedCount} / {sentences.length}</span>
         <span className="evidence-total" aria-hidden="true">10개 문장</span>
         <span>혼합 문장은 문장 부분을 모두 선택</span>
       </div>
-      <ol className="evidence-list" aria-label="분류할 근거 문장">
-        {sentences.map((sentence) => {
-          const pressed = sentence.id === activeSentence?.id;
-          const contextLabel = sentenceOwners.get(sentence.id);
-          const saved = effectiveSelections[sentence.id];
-          const savedFeedback: EvidenceFeedback | null = saved
-            ? evaluateEvidenceSelection(sentence, saved)
-            : null;
-          const isLatestFeedback = latestFeedback?.sentenceId === sentence.id;
-          return (
-            <li className={`evidence-list__item${pressed ? ' is-active' : ''}`} key={sentence.id}>
-              <SentenceCard sentence={sentence} mode="classify-evidence" pressed={pressed} onToggle={selectSentence} {...(contextLabel ? { contextLabel } : {})}>
-                {cardDetails(sentence)}
-              </SentenceCard>
-              {savedFeedback ? <FeedbackPanel ref={isLatestFeedback ? feedbackRef : undefined} feedback={savedFeedback} live={isLatestFeedback} /> : null}
-            </li>
-          );
-        })}
-      </ol>
+      <section className="evidence-board__workspace" aria-labelledby="evidence-workspace-title">
+        <header className="evidence-board__workspace-heading">
+          <div>
+            <h2 id="evidence-workspace-title">문장 카드</h2>
+            <p>카드를 열어 근거 종류를 고르고, 표시한 문장은 아래 보드에 모입니다.</p>
+          </div>
+          <span className="evidence-board__selected-count">선택한 근거 <strong>{selectedEvidence.length}</strong> / {sentences.length}</span>
+        </header>
+        <div className="evidence-category-columns" aria-label="근거 종류별 모음">
+          {categoryCounts.map(({ category, count }) => {
+            const categorySentences = selectedEvidence.filter((sentence) => effectiveSelections[sentence.id]?.categoryIds.includes(category));
+            return (
+              <article className={`evidence-category-column evidence-category-column--${category}`} key={category}>
+                <header>
+                  <h3>{categoryLabels[category]}</h3>
+                  <span>{count}</span>
+                </header>
+                {categorySentences.length > 0 ? (
+                  <ul>
+                    {categorySentences.slice(0, 3).map((sentence) => <li key={sentence.id}>{sentence.text}</li>)}
+                  </ul>
+                ) : <p>카드를 열어 이 칸에 모아 보세요.</p>}
+              </article>
+            );
+          })}
+        </div>
+        <section className="evidence-tray" aria-labelledby="evidence-tray-title">
+          <div className="evidence-tray__heading">
+            <div>
+              <h2 id="evidence-tray-title">근거 모음</h2>
+              <p>분류한 문장을 다시 읽으며 다음 단계의 비교를 준비하세요.</p>
+            </div>
+            <span>{selectedEvidence.length}개 모음</span>
+          </div>
+          {selectedEvidence.length > 0 ? (
+            <ul className="evidence-tray__list">
+              {selectedEvidence.map((sentence) => (
+                <li key={sentence.id}>
+                  <span aria-hidden="true">{sentenceLens.get(sentence.id) ?? '?'}</span>
+                  <p>{sentence.text}</p>
+                </li>
+              ))}
+            </ul>
+          ) : <p className="evidence-tray__empty">아직 모은 문장이 없어요. 문장 카드를 열어 분류해 보세요.</p>}
+        </section>
+        <ol className="evidence-list" aria-label="분류할 근거 문장">
+          {sentences.map((sentence) => {
+            const pressed = sentence.id === activeSentence?.id;
+            const contextLabel = sentenceOwners.get(sentence.id);
+            const saved = effectiveSelections[sentence.id];
+            const savedFeedback: EvidenceFeedback | null = saved
+              ? evaluateEvidenceSelection(sentence, saved)
+              : null;
+            const isLatestFeedback = latestFeedback?.sentenceId === sentence.id;
+            return (
+              <li className={`evidence-list__item${pressed ? ' is-active' : ''}`} key={sentence.id}>
+                <SentenceCard sentence={sentence} mode="classify-evidence" pressed={pressed} onToggle={selectSentence} {...(contextLabel ? { contextLabel } : {})}>
+                  {cardDetails(sentence)}
+                </SentenceCard>
+                {savedFeedback ? <FeedbackPanel ref={isLatestFeedback ? feedbackRef : undefined} feedback={savedFeedback} live={isLatestFeedback} /> : null}
+              </li>
+            );
+          })}
+        </ol>
+      </section>
 
       <div className="stage-action-row evidence-actions">
         <div className="evidence-submit">

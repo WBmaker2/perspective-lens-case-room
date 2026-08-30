@@ -23,6 +23,11 @@ export function CaseIntake({ casePacks, session, onSelectCase, onSelectHypothesi
   const records = selectedPack?.neutralRecords ?? [];
   const intakeRecords = records.filter((record) => record.visibility === 'intake').sort((a, b) => a.sequence - b.sequence);
   const revealCount = records.filter((record) => record.visibility === 'reveal').length;
+  const gateMessage = !selectedPack
+    ? '먼저 사건과 첫 생각을 골라 주세요.'
+    : !session.initialHypothesis
+      ? '첫 생각을 하나 골라 주세요.'
+      : null;
 
   return (
     <section className="stage-content intake" aria-labelledby="intake-title">
@@ -45,11 +50,12 @@ export function CaseIntake({ casePacks, session, onSelectCase, onSelectHypothesi
                 className={`case-choice${selected ? ' is-selected' : ''}`}
                 type="button"
                 key={pack.id}
-                aria-label={`${pack.title} 사건 선택`}
+                aria-label={`${pack.title} 사건 선택 · ${pack.focusQuestion}`}
                 aria-pressed={selected}
                 onClick={() => onSelectCase(pack.id)}
               >
                 <span className="case-choice__title">{pack.title}</span>
+                <span className="case-choice__question">{pack.focusQuestion}</span>
                 <span className="case-choice__action">{selected ? '선택됨' : '사건 선택'}</span>
               </button>
             );
@@ -128,6 +134,7 @@ export function CaseIntake({ casePacks, session, onSelectCase, onSelectHypothesi
           사건 렌즈 열기
         </StageActionButton>
       </div>
+      {gateMessage ? <p className="gate-hint intake__gate-hint" role="status">{gateMessage}</p> : null}
     </section>
   );
 }

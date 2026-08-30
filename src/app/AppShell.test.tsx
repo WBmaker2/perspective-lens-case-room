@@ -62,6 +62,8 @@ describe('AppShell', () => {
     expect(intakeHeading).toHaveAttribute('data-stage-heading');
     expect(intakeHeading).toHaveFocus();
     expect(screen.getByText('모든 사건과 인물은 가상입니다.', { exact: true })).toBeInTheDocument();
+    expect(screen.getByRole('complementary', { name: '현재 학습 단계' })).toHaveTextContent('현재 단계 1/6');
+    expect(screen.getByRole('complementary', { name: '현재 학습 단계' })).toHaveTextContent('사건을 고르고 첫 생각을 기록해 보세요.');
     expect(screen.getAllByRole('button', { name: /사건 선택/ })).toHaveLength(4);
     expect(screen.getByRole('button', { name: '사건 렌즈 열기' })).toBeDisabled();
 
@@ -198,7 +200,9 @@ describe('AppShell', () => {
     for (const blockId of clubNoticePoster.rewriteRules[0]!.acceptedExampleBlockSets[0]!) {
       const item = available.querySelector(`[data-block-id="${blockId}"]`);
       expect(item).not.toBeNull();
-      await user.click(within(item as HTMLElement).getByRole('button', { name: new RegExp(`블록 넣기.*${blockId}`) }));
+      const block = clubNoticePoster.rewriteBlocks.find((candidate) => candidate.id === blockId);
+      expect(block).toBeDefined();
+      await user.click(within(item as HTMLElement).getByRole('button', { name: `블록 넣기: ${block!.text}` }));
     }
     await waitFor(() => {
       const saved = JSON.parse(data.get(SESSION_KEY) ?? '{}') as { rewriteDraft: { blockIds: string[] } };
