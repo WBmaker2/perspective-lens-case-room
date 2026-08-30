@@ -4,7 +4,7 @@
 
 초등 5–6학년 서윤 관점으로 실제 브라우저에서 전체 학습 흐름을 확인하고, 761px 태블릿 경계에서 학습 단계와 고정 도구가 겹치던 P1을 수정했습니다. 320·375·640·761·1280px에서 가로 오버플로가 없고, 761px에서 도구와 단계가 분리되며 사건 카드가 두 열로 읽힙니다.
 
-이번 작업은 코드·문서·로컬 검증까지 완료했지만 커밋·푸시·Pages 배포는 실행하지 않았습니다. 로컬 Playwright CLI는 브라우저 실행 파일이 없어 자동 E2E가 실행되지 않았으므로, 이 보고서는 릴리스 통과가 아닌 `conditional` 판정입니다.
+코드·문서·로컬 검증과 GitHub Actions Ubuntu Chromium 검증을 완료한 뒤 `main`에 커밋·푸시하고 GitHub Pages에 배포했습니다. 로컬 Playwright CLI는 macOS에 실행 파일이 없어 실행하지 않았지만, 동일한 전체 E2E 11개는 CI에서 통과했습니다.
 
 ## 점검 정보
 
@@ -77,15 +77,23 @@
 - `git diff --check`: PASS
 - In-app browser: 전체 learner path PASS, 5개 뷰포트 레이아웃·가로 오버플로·콘솔 PASS
 - 자동 Playwright E2E: 로컬 Chromium 실행 파일이 없어 `not run`; 설치는 승인하지 않아 실행하지 않음
+- GitHub Actions `33311614991`: unit/typecheck/lint/filesize/build/Chromium 설치/Playwright E2E 11개 및 Pages deploy PASS
+
+## 릴리스 증거
+
+- 커밋: `98370bc` (레이아웃·UX 문서), `f9f089d` (CI 좌표 진단), `0f92330` (Playwright 좌표 계산 수정)
+- 원격: `origin/main`에 `0f92330d7ea56130847f498bbede362d359cf928` 반영
+- Actions: [Deploy to GitHub Pages 실행 33311614991](https://github.com/WBmaker2/perspective-lens-case-room/actions/runs/33311614991)
+- 공개 앱: [관점 렌즈 사건실](https://wbmaker2.github.io/perspective-lens-case-room/)
+- 공개 확인: HTML·JavaScript·CSS·favicon HTTP 200, 제목 `관점 렌즈 사건실`, 375px·761px에서 가로 오버플로 없음, 콘솔 오류 0건
 
 ## 수용 게이트
 
 - 기준선: `fail` — 761/1280px에서 해결되지 않은 P1 겹침.
-- 최종: `conditional` — P0 0, 해결되지 않은 P1 0, 동일 시나리오 재검증 완료. 다만 자동 Playwright/axe 재실행 증거가 없어 릴리스 통과로 보고하지 않으며, EDU-UX-002 P2 후속도 남아 있습니다.
-- 잠정 점수: 84/100. 자동 브라우저 증거가 확보되기 전까지 잠정치로만 사용합니다.
+- 최종: `passed-with-follow-up` — P0 0, 해결되지 않은 P1 0, CI Playwright 11개 PASS, Pages 배포·공개 경로 확인 완료. EDU-UX-002 P2 후속은 남아 있습니다.
+- 점수는 산정하지 않습니다. 자동화·수동 증거를 별도 상태로 기록합니다.
 
 ## 다음 권장 단계
 
-1. GitHub Actions Ubuntu Chromium에서 새 761px 회귀와 기존 learner/axe 시나리오를 실행해 자동 증거를 확보합니다.
-2. 결과가 통과하면 이 작업의 변경 파일만 별도 커밋하고, 그 다음에만 사용자의 별도 승인으로 푸시·Pages 배포를 진행합니다.
-3. 모바일 본문 위 고정 도구(P2)는 실제 교실 관찰 전에 고정 위치 변경 여부를 검토합니다.
+1. 모바일 본문 위 고정 도구(P2)는 실제 교실 관찰 전에 고정 위치 변경 여부를 검토합니다.
+2. 다음 UI 변경에서도 `npm test`, 타입·린트·파일 길이·빌드와 GitHub Actions Playwright 게이트를 함께 유지합니다.
