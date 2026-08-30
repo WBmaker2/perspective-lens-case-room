@@ -12,6 +12,7 @@
 ## 점검 정보
 
 - 점검일: 2026-08-30 KST
+- 릴리스일: 2026-08-31 KST
 - 실행 모드: `full`
 - Stage 0: `ready` — [bootstrap report](./elementary-webapp-ux-bootstrap.md)
 - 실행 계획: [targeted implementation plan](./elementary-webapp-ux-targeted-plan.md)
@@ -22,6 +23,8 @@
 - 읽기 가드레일: 준호(8–10세)
 - 브라우저: Codex in-app browser, `http://127.0.0.1:4175/`
 - VoiceOver·실제 학생·교실 수용성: 실행하지 않음
+- 릴리스 커밋: `38d9744` (`test: align learner language E2E stage assertion`)
+- Pages Actions: [Deploy to GitHub Pages run 33339965538](https://github.com/WBmaker2/perspective-lens-case-room/actions/runs/33339965538)
 
 ## 기준선 → 최종 상태
 
@@ -79,11 +82,13 @@
 - 타입·린트·파일 크기·빌드·공백 검사: `npm run typecheck`, `npm run lint`, `npm run lint:filesize`, `npm run build`, `git diff --check` 모두 PASS. 모든 소스 파일은 499줄 이하입니다.
 - 로컬 Playwright CLI: targeted 명령은 빌드까지 통과했지만 macOS Chromium 실행 파일 부재로 2개 테스트가 `blocked`; 브라우저 설치는 하지 않았습니다.
 - in-app browser: 375×812·640×900·1280×900 targeted 흐름 PASS, 오답 회복·문구·가로 폭·콘솔 확인.
-- GitHub Actions·커밋·푸시·Pages 배포: 이번 회차 범위가 아니므로 실행하지 않았습니다.
+- GitHub Actions: run 33339965538의 `build`·`deploy` job 성공. Ubuntu Chromium 설치와 Playwright E2E 13개를 포함해 Pages artifact를 배포했습니다.
+- 커밋·푸시: `e0c4372` 구현 커밋과 `38d9744` E2E 보정 커밋을 `main`에 푸시했습니다.
+- Pages 공개 확인: [관점 렌즈 사건실](https://wbmaker2.github.io/perspective-lens-case-room/) HTTP 200, 문서 제목·JS·CSS·favicon HTTP 200, 새 문구가 제공되는 것을 확인했습니다.
 
-## 기존 공개 경로
+## 공개 경로
 
-이전 릴리스의 공개 확인 주소는 [관점 렌즈 사건실](https://wbmaker2.github.io/perspective-lens-case-room/)입니다. 이번 변경은 아직 커밋·푸시·배포하지 않았으므로 이 URL은 이번 문구 변경의 공개 증거가 아닙니다.
+현재 릴리스의 공개 확인 주소는 [관점 렌즈 사건실](https://wbmaker2.github.io/perspective-lens-case-room/)입니다. Pages workflow run 33339965538이 `38d9744`까지 배포했으며, HTML의 `관점 렌즈 사건실` 제목과 새 정적 자산을 확인했습니다.
 
 ## 수용 게이트
 
@@ -92,10 +97,10 @@
 - 언어 장부: 6건 resolved
 - 시뮬레이션: `not-needed` confirmed
 - 변경 범위: 단어·문장 표현, 접근 가능한 이름, 보고서 회고, 테스트·증거 문서만 변경
-- 미실행: VoiceOver, 실제 학생, 로컬 Playwright 브라우저, 커밋·푸시·배포
+- 미실행: VoiceOver, 실제 학생, 로컬 Playwright 브라우저
 
 ## 다음 실행 선택지
 
-1. 사용자가 승인하면 전체 로컬 게이트와 in-app browser 375·640·1280 재검증을 실행합니다.
-2. 별도 승인 전에는 시뮬레이션 기능, 음성 기능, 새 이미지, 콘텐츠·판정 모델을 추가하지 않습니다.
-3. 이번 회차가 검증으로 충분하다고 판단할 때만 커밋·푸시·Pages 배포를 별도 요청으로 진행합니다.
+1. 추가 표현 개선이나 시뮬레이션 기능 도입은 별도 범위와 승인으로 다룹니다.
+2. 별도 승인 전에는 음성 기능, 새 이미지, 콘텐츠·판정 모델을 추가하지 않습니다.
+3. 현재 두 단계 개선은 `38d9744`까지 Pages에 공개되어 있으며, 다음 배포는 새로운 변경이 생긴 뒤 동일한 Actions 게이트를 통과할 때 진행합니다.
