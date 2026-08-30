@@ -35,6 +35,7 @@ async function resetAndOpenEvidence(page: Page) {
   await press(page.getByRole('button', { name: '중요 문장 표시', exact: true }).nth(0));
   await press(page.getByRole('tab', { name: '렌즈 A', exact: true }));
   await press(page.getByRole('button', { name: '중요 문장 표시', exact: true }).nth(0));
+  await expect(page.getByText('두 사람이 본 단서')).toBeVisible();
   await press(page.getByRole('button', { name: '근거 보드로 이동', exact: true }));
 }
 
@@ -126,7 +127,6 @@ test('shows child-friendly language and recovers from a wrong evidence choice', 
   await page.setViewportSize({ width: 375, height: 812 });
   await resetAndOpenEvidence(page);
 
-  await expect(page.getByText('두 사람이 본 단서')).toBeVisible();
   await expect(page.getByText('문장을 고른 뒤, 사실·생각·판단 중 어디에 해당하는지 골라 보세요.')).toBeVisible();
   await expect(page.getByText(/관찰 사실: 글에서 확인한 일/)).toBeVisible();
 
