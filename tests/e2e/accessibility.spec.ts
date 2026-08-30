@@ -202,18 +202,12 @@ test('keeps tablet progress and utility controls readable at the desktop breakpo
   expect(utilityBox).not.toBeNull();
   expect(progressBox).not.toBeNull();
   const intersects = Boolean(utilityBox && progressBox && !(
-    utilityBox.right <= progressBox.left ||
-    progressBox.right <= utilityBox.left ||
-    utilityBox.bottom <= progressBox.top ||
-    progressBox.bottom <= utilityBox.top
+    utilityBox.x + utilityBox.width <= progressBox.x ||
+    progressBox.x + progressBox.width <= utilityBox.x ||
+    utilityBox.y + utilityBox.height <= progressBox.y ||
+    progressBox.y + progressBox.height <= utilityBox.y
   ));
-  const layoutDebug = await page.evaluate(() => ({
-    innerWidth,
-    clientWidth: document.documentElement.clientWidth,
-    mediaMin761: matchMedia('(min-width: 761px)').matches,
-    appShellPaddingTop: getComputedStyle(document.querySelector('.app-shell')!).paddingTop,
-  }));
-  expect(intersects, `utility=${JSON.stringify(utilityBox)} progress=${JSON.stringify(progressBox)} layout=${JSON.stringify(layoutDebug)}`).toBe(false);
+  expect(intersects).toBe(false);
 
   const caseRows = await page.locator('.case-choice').evaluateAll((elements) => (
     new Set(elements.map((element) => Math.round(element.getBoundingClientRect().top))).size
