@@ -6,25 +6,30 @@ const isoDate = /^\d{4}-\d{2}-\d{2}$/;
 
 describe('update history', () => {
   it('contains the dated design/development entries and eight case review rows', () => {
-    expect(updateHistory).toHaveLength(15);
+    expect(updateHistory).toHaveLength(16);
     expect(updateHistory[0]).toMatchObject({
+      date: '2026-08-30',
+      category: '개선',
+      summary: '761–1024px 태블릿에서 학습 도구와 단계가 겹치지 않도록 상단 여백과 두 열 학습 카드 배치를 추가',
+    });
+    expect(updateHistory[1]).toMatchObject({
       date: '2026-08-30',
       category: '개선',
       summary: '근거 보드를 두 렌즈 요약·진행 안내·문장 카드·근거 모음으로 재구성해 비교 흐름을 한눈에 확인하도록 개선',
     });
-    expect(updateHistory[1]).toMatchObject({
+    expect(updateHistory[2]).toMatchObject({
       date: '2026-08-29',
       category: '개선',
       summary: '학습 단계·사건 선택·다시 쓰기 화면의 현재 행동과 문장 맥락을 더 쉽게 확인하도록 리디자인',
     });
-    expect(updateHistory[3]).toMatchObject({
+    expect(updateHistory[4]).toMatchObject({
       date: '2026-08-28',
       category: '개선',
       summary: '375px 렌즈 문장 가로 배치, 학습자 표현 정리, 보고서 배운 점·다음 행동, 문장 재방문 초점, 파비콘 추가',
     });
-    expect(updateHistory[4]).toMatchObject({ date: '2026-08-27', category: '개선', summary: '375px 모바일, 키보드 전체 흐름, 스크린 리더 구조, 200% 확대, 모션 감소, A4 인쇄 검증 완료' });
-    expect(updateHistory[5]).toMatchObject({ date: '2026-08-26', category: '개발', summary: 'MVP 4개 사건, 근거 분류, 교차 조사, 관점 전환, 접근성 기능 추가' });
-    expect(updateHistory[6]).toMatchObject({ date: '2026-08-26', category: '설계', summary: '최초 설계 문서 작성' });
+    expect(updateHistory[5]).toMatchObject({ date: '2026-08-27', category: '개선', summary: '375px 모바일, 키보드 전체 흐름, 스크린 리더 구조, 200% 확대, 모션 감소, A4 인쇄 검증 완료' });
+    expect(updateHistory[6]).toMatchObject({ date: '2026-08-26', category: '개발', summary: 'MVP 4개 사건, 근거 분류, 교차 조사, 관점 전환, 접근성 기능 추가' });
+    expect(updateHistory[7]).toMatchObject({ date: '2026-08-26', category: '설계', summary: '최초 설계 문서 작성' });
     const caseEntries = updateHistory.filter((entry) => 'caseId' in entry);
     expect(caseEntries).toHaveLength(8);
     expect(caseEntries.map((entry) => entry.caseId)).toEqual(casePacks.flatMap((pack) => [pack.id, pack.id]));

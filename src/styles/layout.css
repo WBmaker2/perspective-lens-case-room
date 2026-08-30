@@ -38,6 +38,9 @@ button:focus-visible, input:focus-visible, [tabindex="-1"]:focus-visible {
 }
 
 @media (min-width: 761px) {
+  .app-shell {
+    padding-top: 5.75rem;
+  }
   .app-shell[data-active-stage="evidence"] .app-shell__orientation {
     display: grid;
     grid-template-columns: minmax(0, 1.35fr) minmax(16rem, 0.65fr);
@@ -353,5 +356,18 @@ button:focus-visible, input:focus-visible, [tabindex="-1"]:focus-visible {
   }
   .utility-warning {
     bottom: calc(var(--utility-stack-height) + 1rem + 0.5rem + env(safe-area-inset-bottom));
+  }
+}
+
+@media (min-width: 761px) and (max-width: 1024px) {
+  .app-shell__topbar {
+    grid-template-columns: 1fr;
+    gap: 0.9rem;
+  }
+  .case-picker__list, .hypothesis__options {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .intake-workspace {
+    grid-template-columns: 1fr;
   }
 }

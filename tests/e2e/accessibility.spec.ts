@@ -186,3 +186,32 @@ test('axe, semantics, tabs, announcements, and dialogs cover the full learner pa
   await expect.poll(() => page.locator('.case-report__background').getAttribute('inert')).toBeNull();
   await expect(resetTrigger).toBeFocused();
 });
+
+test('keeps tablet progress and utility controls readable at the desktop breakpoint', async ({ page }) => {
+  await page.setViewportSize({ width: 761, height: 900 });
+  await page.goto('/');
+  await page.evaluate(() => { sessionStorage.clear(); localStorage.clear(); });
+  await page.reload();
+
+  const utility = page.locator('.utility-group');
+  const progress = page.locator('.progress');
+  await expect(utility).toBeVisible();
+  await expect(progress).toBeVisible();
+
+  const [utilityBox, progressBox] = await Promise.all([utility.boundingBox(), progress.boundingBox()]);
+  expect(utilityBox).not.toBeNull();
+  expect(progressBox).not.toBeNull();
+  const intersects = Boolean(utilityBox && progressBox && !(
+    utilityBox.right <= progressBox.left ||
+    progressBox.right <= utilityBox.left ||
+    utilityBox.bottom <= progressBox.top ||
+    progressBox.bottom <= utilityBox.top
+  ));
+  expect(intersects).toBe(false);
+
+  const caseRows = await page.locator('.case-choice').evaluateAll((elements) => (
+    new Set(elements.map((element) => Math.round(element.getBoundingClientRect().top))).size
+  ));
+  expect(caseRows).toBe(2);
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+});
